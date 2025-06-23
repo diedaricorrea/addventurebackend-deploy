@@ -39,6 +39,7 @@ import com.add.venture.repository.ParticipanteGrupoRepository;
 import com.add.venture.repository.UsuarioRepository;
 import com.add.venture.repository.ViajeRepository;
 import com.add.venture.service.IGrupoViajeService;
+import com.add.venture.service.INotificacionService;
 
 import jakarta.validation.Valid;
 
@@ -66,6 +67,9 @@ public class GrupoViajeController {
 
     @Autowired
     private ViajeRepository viajeRepository;
+
+    @Autowired
+    private INotificacionService notificacionService;
 
     @GetMapping
     public String listarGrupos(
@@ -112,11 +116,26 @@ public class GrupoViajeController {
             Usuario usuario = usuarioRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-            boolean isParticipante = participanteGrupoRepository.existsByUsuarioAndGrupo(usuario, grupo);
+            // Verificar si es participante ACEPTADO
+            Optional<ParticipanteGrupo> participante = participanteGrupoRepository.findByUsuarioAndGrupo(usuario, grupo);
+            boolean isParticipante = participante.isPresent() && 
+                                   participante.get().getEstadoSolicitud() == EstadoSolicitud.ACEPTADO;
             model.addAttribute("isParticipante", isParticipante);
+            
+            // Verificar estado de solicitud si existe
+            if (participante.isPresent()) {
+                model.addAttribute("estadoSolicitud", participante.get().getEstadoSolicitud().name());
+            } else {
+                model.addAttribute("estadoSolicitud", "NINGUNA");
+            }
         } else {
             model.addAttribute("isParticipante", false);
+            model.addAttribute("estadoSolicitud", "NINGUNA");
         }
+        
+        // Contar solo participantes aceptados
+        long participantesAceptados = participanteGrupoRepository.countByGrupoAndEstadoSolicitud(grupo, EstadoSolicitud.ACEPTADO);
+        model.addAttribute("participantesAceptados", participantesAceptados);
 
         return "grupos/detalles";
     }
@@ -138,22 +157,35 @@ public class GrupoViajeController {
         GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
                 .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
 
-        // Verificar si ya es participante
-        if (participanteGrupoRepository.existsByUsuarioAndGrupo(usuario, grupo)) {
-            return "{\"error\": \"Ya eres participante de este grupo\"}";
+        // Verificar si ya es participante o tiene una solicitud pendiente
+        Optional<ParticipanteGrupo> participanteExistente = participanteGrupoRepository.findByUsuarioAndGrupo(usuario, grupo);
+        if (participanteExistente.isPresent()) {
+            EstadoSolicitud estado = participanteExistente.get().getEstadoSolicitud();
+            if (estado == EstadoSolicitud.ACEPTADO) {
+                return "{\"error\": \"Ya eres participante de este grupo\"}";
+            } else if (estado == EstadoSolicitud.PENDIENTE) {
+                return "{\"error\": \"Ya tienes una solicitud pendiente para este grupo\"}";
+            } else if (estado == EstadoSolicitud.RECHAZADO) {
+                return "{\"error\": \"Tu solicitud fue rechazada anteriormente\"}";
+            }
         }
 
-        // Crear participante
-        ParticipanteGrupo participante = new ParticipanteGrupo();
-        participante.setUsuario(usuario);
-        participante.setGrupo(grupo);
-        participante.setRolParticipante("MIEMBRO");
-        participante.setEstadoSolicitud(EstadoSolicitud.ACEPTADO);
-        participante.setFechaUnion(LocalDateTime.now());
+        // Crear solicitud de participante
+        ParticipanteGrupo solicitud = ParticipanteGrupo.builder()
+                .usuario(usuario)
+                .grupo(grupo)
+                .rolParticipante("MIEMBRO")
+                .estadoSolicitud(EstadoSolicitud.PENDIENTE)
+                .fechaUnion(LocalDateTime.now())
+                .build();
 
-        participanteGrupoRepository.save(participante);
+        participanteGrupoRepository.save(solicitud);
 
-        return "{\"success\": true}";
+        // Crear notificación para el líder del grupo
+        notificacionService.crearNotificacionSolicitudUnion(usuario, grupo.getCreador(), 
+                idGrupo, grupo.getNombreViaje());
+
+        return "{\"success\": true, \"message\": \"Solicitud enviada al líder del grupo\"}";
     }
 
     @PostMapping("/{id}/abandonar")
@@ -191,6 +223,39 @@ public class GrupoViajeController {
 
         redirectAttributes.addFlashAttribute("mensaje", "Has abandonado el grupo exitosamente");
         return "redirect:/grupos";
+    }
+
+    @GetMapping("/{id}/historial-chat")
+    public String verHistorialChat(@PathVariable("id") Long idGrupo, Model model) {
+        usuarioAutenticadoHelper.cargarDatosUsuarioParaNavbar(model);
+        usuarioAutenticadoHelper.cargarUsuarioParaPerfil(model);
+
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || auth.getName().equals("anonymousUser")) {
+            return "redirect:/login";
+        }
+
+        String email = auth.getName();
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+        GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
+                .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+
+        // Verificar que el usuario fue participante del grupo
+        Optional<ParticipanteGrupo> participante = participanteGrupoRepository.findByUsuarioAndGrupo(usuario, grupo);
+        if (participante.isEmpty() || participante.get().getEstadoSolicitud() != EstadoSolicitud.ACEPTADO) {
+            return "redirect:/grupos";
+        }
+
+        // Obtener mensajes del chat
+        List<MensajeGrupo> mensajes = mensajeGrupoRepository.findByGrupoOrderByFechaEnvioAsc(grupo);
+
+        model.addAttribute("grupo", grupo);
+        model.addAttribute("mensajes", mensajes);
+        model.addAttribute("esHistorial", true);
+
+        return "grupos/historial-chat";
     }
 
     @PostMapping("/{id}/expulsar")

@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -64,6 +66,7 @@ public class Usuario {
     private LocalDate fechaNacimiento;
 
     @Column(name = "contraseña_hash")
+    @JsonIgnore
     private String contrasenaHash;
 
     @Column(name = "foto_perfil")
@@ -93,12 +96,14 @@ public class Usuario {
     @EqualsAndHashCode.Exclude
     @ManyToMany
     @JoinTable(name = "UsuarioEtiqueta", joinColumns = @JoinColumn(name = "id_usuario"), inverseJoinColumns = @JoinColumn(name = "id_etiqueta"))
+    @JsonIgnore
     private Set<Etiqueta> etiquetas;
 
     // Excluir otras colecciones que puedan causar referencias circulares
     @EqualsAndHashCode.Exclude
     @OneToMany(mappedBy = "creador")
     @ToString.Exclude
+    @JsonIgnore
     private Set<GrupoViaje> gruposCreados;
 
     // Otras relaciones que deban ser excluidas
@@ -106,6 +111,7 @@ public class Usuario {
     // Añadir la relación con Logro
     @ManyToMany
     @JoinTable(name = "UsuarioLogro", joinColumns = @JoinColumn(name = "id_usuario"), inverseJoinColumns = @JoinColumn(name = "id_logro"))
+    @JsonIgnore
     private Set<Logro> logros;
 
     public String getIniciales() {

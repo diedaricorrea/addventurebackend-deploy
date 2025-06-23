@@ -2,6 +2,8 @@ package com.add.venture.model;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -47,5 +49,17 @@ public class Notificacion {
     // Relaciones
     @ManyToOne
     @JoinColumn(name = "id_usuario")
+    @JsonIgnoreProperties({"gruposCreados", "etiquetas", "logros", "contrasenaHash"})
     private Usuario usuario;
+    
+    // Campos adicionales para solicitudes de unión
+    @ManyToOne
+    @JoinColumn(name = "id_grupo")
+    @JsonIgnoreProperties({"creador", "viaje", "etiquetas", "itinerarios", "participantes", "mensajes", "resenas"})
+    private GrupoViaje grupo;
+    
+    @ManyToOne
+    @JoinColumn(name = "id_solicitante")
+    @JsonIgnoreProperties({"gruposCreados", "etiquetas", "logros", "contrasenaHash"})
+    private Usuario solicitante;
 }

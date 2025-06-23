@@ -3,6 +3,9 @@ package com.add.venture.model;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -53,6 +56,7 @@ public class GrupoViaje {
     @ToString.Exclude
     @ManyToOne
     @JoinColumn(name = "id_creador")
+    @JsonIgnoreProperties({"gruposCreados", "etiquetas", "logros", "contrasenaHash"})
     private Usuario creador;
 
     @EqualsAndHashCode.Exclude
@@ -69,25 +73,30 @@ public class GrupoViaje {
         joinColumns = @JoinColumn(name = "id_grupo"), 
         inverseJoinColumns = @JoinColumn(name = "id_etiqueta")
     )
+    @JsonIgnore
     private Set<Etiqueta> etiquetas;
 
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @OneToMany(mappedBy = "grupo", cascade = CascadeType.ALL)
+    @JsonIgnore
     private Set<Itinerario> itinerarios;
 
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @OneToMany(mappedBy = "grupo", cascade = CascadeType.ALL)
+    @JsonIgnore
     private Set<ParticipanteGrupo> participantes;
 
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @OneToMany(mappedBy = "grupo", cascade = CascadeType.ALL)
+    @JsonIgnore
     private Set<MensajeGrupo> mensajes;
     
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @OneToMany(mappedBy = "grupo", cascade = CascadeType.ALL)
+    @JsonIgnore
     private Set<Resena> resenas;
 }

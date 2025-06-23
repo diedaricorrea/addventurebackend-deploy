@@ -188,7 +188,7 @@
                                                 <div>
                                                     <p class="text-muted small mb-0">Participantes</p>
                                                     <p class="fw-medium mb-0">
-                                                        <span th:text="${grupo.participantes.size()}"></span> de <span
+                                                        <span th:text="${participantesAceptados != null ? participantesAceptados + 1 : 1}">1</span> de <span
                                                             th:text="${grupo.maxParticipantes}"></span>
                                                     </p>
                                                 </div>
@@ -224,24 +224,48 @@
 
                                 <!-- Action Buttons -->
                                 <div class="d-grid gap-3">
-                                    <!-- Botón para unirse al grupo (si no es miembro) -->
+                                    <!-- Botón para unirse al grupo (si no tiene solicitud) -->
                                     <button id="joinGroupBtn" class="btn btn-primary"
-                                        th:if="${#authentication.isAuthenticated() && !#authentication.name.equals(grupo.creador.email) && !isParticipante}">
+                                        th:if="${#authentication.isAuthenticated() && !#authentication.name.equals(grupo.creador.email) && estadoSolicitud == 'NINGUNA'}">
                                         <i class="bi bi-people me-2"></i> Unirse al grupo
                                     </button>
 
-                                    <!-- Botón para abandonar el grupo (si es miembro pero no creador) -->
+                                    <!-- Estado de solicitud pendiente -->
+                                    <div class="alert alert-warning" 
+                                         th:if="${#authentication.isAuthenticated() && estadoSolicitud == 'PENDIENTE'}">
+                                        <i class="bi bi-clock me-2"></i> Solicitud enviada. Esperando aprobación del líder.
+                                    </div>
+
+                                    <!-- Estado de solicitud rechazada -->
+                                    <div class="alert alert-danger" 
+                                         th:if="${#authentication.isAuthenticated() && estadoSolicitud == 'RECHAZADO'}">
+                                        <i class="bi bi-x-circle me-2"></i> Tu solicitud fue rechazada.
+                                    </div>
+
+                                    <!-- Botón para abandonar el grupo (si es miembro aceptado pero no creador) -->
                                     <button id="leaveGroupBtn" class="btn btn-outline-danger"
                                         th:if="${#authentication.isAuthenticated() && !#authentication.name.equals(grupo.creador.email) && isParticipante}"
                                         data-bs-toggle="modal" data-bs-target="#leaveGroupModal">
                                         <i class="bi bi-box-arrow-right me-2"></i> Abandonar grupo
                                     </button>
 
-                                    <!-- Botón para calificar viajeros (si es miembro) -->
-                                    <button class="btn btn-outline-primary"
-                                        th:if="${#authentication.isAuthenticated() && isParticipante}">
+                                    <!-- Botón para calificar viajeros (si es miembro y el viaje terminó) -->
+                                    <a th:href="@{/calificaciones/grupo/{id}(id=${grupo.idGrupo})}" class="btn btn-outline-primary"
+                                       th:if="${#authentication.isAuthenticated() && isParticipante && grupo.estado == 'cerrado'}">
                                         <i class="bi bi-star me-2"></i> Calificar viajeros
+                                    </a>
+
+                                    <!-- Botón para cerrar viaje (solo para el creador) -->
+                                    <button id="closeGroupBtn" class="btn btn-outline-warning"
+                                        th:if="${#authentication.isAuthenticated() && #authentication.name.equals(grupo.creador.email) && grupo.estado == 'activo'}">
+                                        <i class="bi bi-lock me-2"></i> Cerrar viaje
                                     </button>
+
+                                    <!-- Ver historial del chat (si el viaje está cerrado y fue participante) -->
+                                    <a th:href="@{/grupos/{id}/historial-chat(id=${grupo.idGrupo})}" class="btn btn-outline-info"
+                                       th:if="${#authentication.isAuthenticated() && isParticipante && grupo.estado == 'cerrado'}">
+                                        <i class="bi bi-chat-square-text me-2"></i> Ver historial del chat
+                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -268,14 +292,13 @@
                                             Grupo</span></h5>
                                 </div>
                                 <span class="badge bg-white text-primary">
-                                    <span
-                                        th:text="${grupo.participantes != null ? grupo.participantes.size() : 0}">0</span>
+                                    <span th:text="${participantesAceptados != null ? participantesAceptados + 1 : 1}">1</span>
                                     participantes
                                 </span>
                             </div>
 
                             <div class="card-body p-0">
-                                <div class="chat-container p-3" id="chatMessages">
+                                <div class="chat-container p-3" id="chatMessages" style="height: 400px; overflow-y: auto;">
                                     <!-- Mensajes del chat (se cargarían dinámicamente) -->
                                     <div class="alert alert-info text-center" th:if="${!isParticipante}">
                                         <i class="bi bi-lock me-2"></i>
@@ -285,12 +308,19 @@
 
                                 <!-- Chat Input -->
                                 <div class="p-3 border-top" th:if="${isParticipante}">
-                                    <div class="input-group">
+                                    <div class="input-group mb-2">
                                         <input type="text" id="chatInput" class="form-control"
                                             placeholder="Escribe un mensaje...">
                                         <button id="sendBtn" class="btn btn-primary" type="button">
                                             <i class="bi bi-send"></i>
                                         </button>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <input type="file" id="imageInput" class="form-control" accept="image/*" style="display: none;">
+                                        <button id="imageBtn" class="btn btn-outline-secondary btn-sm me-2" type="button">
+                                            <i class="bi bi-image"></i> Enviar imagen
+                                        </button>
+                                        <small class="text-muted">Envía mensajes y fotos del viaje</small>
                                     </div>
                                 </div>
                             </div>
@@ -427,33 +457,30 @@
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Script para la página de detalle de grupo
+    <!-- Script para la página de detalle de grupo -->
     <script th:inline="javascript">
+        const grupoId = /*[[${grupo.idGrupo}]]*/ 0;
+        const isParticipante = /*[[${isParticipante}]]*/ false;
+
         document.addEventListener('DOMContentLoaded', function () {
             // Botón para unirse al grupo
             const joinGroupBtn = document.getElementById('joinGroupBtn');
             if (joinGroupBtn) {
                 joinGroupBtn.addEventListener('click', function () {
                     // Enviar solicitud para unirse al grupo
-                    fetch([[${ '/grupos/' + grupo.idGrupo + '/unirse' }]], {
+                    fetch(`/grupos/${grupoId}/unirse`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').getAttribute('content')
                         }
                     })
-                        .then(response => {
-                            if (response.ok) {
-                                // Mostrar modal de confirmación
-                                const joinModal = new bootstrap.Modal(document.getElementById('joinGroupModal'));
-                                joinModal.show();
-
-                                // Recargar la página después de 2 segundos
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 2000);
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                alert(data.message || 'Solicitud enviada exitosamente');
+                                location.reload();
                             } else {
-                                alert('Error al unirse al grupo. Inténtalo de nuevo.');
+                                alert(data.error || 'Error al enviar solicitud');
                             }
                         })
                         .catch(error => {
@@ -463,6 +490,186 @@
                 });
             }
 
+            // Funcionalidad del chat
+            if (isParticipante) {
+                initChat();
+            }
+
+            // Botón cerrar viaje
+            const closeGroupBtn = document.getElementById('closeGroupBtn');
+            if (closeGroupBtn) {
+                closeGroupBtn.addEventListener('click', function() {
+                    if (confirm('¿Estás seguro de que quieres cerrar este viaje? Esta acción no se puede deshacer y habilitará las calificaciones.')) {
+                        fetch(`/chat/grupo/${grupoId}/cerrar`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            }
+                        })
+                        .then(response => response.text())
+                        .then(data => {
+                            if (data.includes('éxito') || data.includes('cerrado')) {
+                                alert('Viaje cerrado exitosamente');
+                                location.reload();
+                            } else {
+                                alert('Error al cerrar el viaje: ' + data);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Error al cerrar el viaje');
+                        });
+                    }
+                });
+            }
+
+            // Manejo de modales
+            setupModals();
+        });
+
+        function initChat() {
+            const chatMessages = document.getElementById('chatMessages');
+            const chatInput = document.getElementById('chatInput');
+            const sendBtn = document.getElementById('sendBtn');
+            const imageBtn = document.getElementById('imageBtn');
+            const imageInput = document.getElementById('imageInput');
+
+            // Cargar mensajes al iniciar
+            loadMessages();
+
+            // Enviar mensaje de texto
+            function sendMessage() {
+                const mensaje = chatInput.value.trim();
+                if (!mensaje) return;
+
+                const formData = new FormData();
+                formData.append('mensaje', mensaje);
+
+                fetch(`/chat/grupo/${grupoId}/enviar`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.idMensaje) {
+                        chatInput.value = '';
+                        loadMessages();
+                    } else {
+                        alert('Error al enviar mensaje');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al enviar mensaje');
+                });
+            }
+
+            // Eventos
+            sendBtn.addEventListener('click', sendMessage);
+            chatInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Botón de imagen
+            imageBtn.addEventListener('click', function() {
+                imageInput.click();
+            });
+
+            // Enviar imagen
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('imagen', file);
+                formData.append('descripcion', '');
+
+                fetch(`/chat/grupo/${grupoId}/enviar-imagen`, {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.idMensaje) {
+                        imageInput.value = '';
+                        loadMessages();
+                    } else {
+                        alert('Error al enviar imagen');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al enviar imagen');
+                });
+            });
+
+            // Actualizar mensajes cada 5 segundos
+            setInterval(loadMessages, 5000);
+        }
+
+        function loadMessages() {
+            fetch(`/chat/grupo/${grupoId}/mensajes`)
+                .then(response => response.json())
+                .then(mensajes => {
+                    displayMessages(mensajes);
+                })
+                .catch(error => {
+                    console.error('Error al cargar mensajes:', error);
+                });
+        }
+
+        function displayMessages(mensajes) {
+            const chatMessages = document.getElementById('chatMessages');
+            if (!Array.isArray(mensajes)) return;
+
+            chatMessages.innerHTML = '';
+
+            mensajes.forEach(mensaje => {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = 'mb-3 d-flex align-items-start';
+
+                const isCurrentUser = mensaje.remitente && mensaje.remitente.email === '[[${#authentication.name}]]';
+
+                messageDiv.innerHTML = `
+                    <div class="me-3">
+                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
+                            ${mensaje.remitente ? mensaje.remitente.nombre.charAt(0).toUpperCase() : 'U'}
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center mb-1">
+                            <strong class="me-2">${mensaje.remitente ? mensaje.remitente.nombre + ' ' + mensaje.remitente.apellidos : 'Usuario'}</strong>
+                            <small class="text-muted">${formatDate(mensaje.fechaEnvio)}</small>
+                        </div>
+                        <div class="message-content">
+                            ${mensaje.tipoMensaje === 'imagen' ? 
+                                `<img src="${mensaje.archivoUrl}" class="img-fluid rounded mb-2" style="max-width: 300px;">
+                                 <p class="mb-0">${mensaje.mensaje}</p>` : 
+                                `<p class="mb-0">${mensaje.mensaje}</p>`}
+                        </div>
+                    </div>
+                `;
+
+                chatMessages.appendChild(messageDiv);
+            });
+
+            // Scroll al final
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('es-ES', {
+                hour: '2-digit',
+                minute: '2-digit',
+                day: '2-digit',
+                month: '2-digit'
+            });
+        }
+
+        function setupModals() {
             // Manejo del modal de expulsión
             const expelMemberModal = document.getElementById('expelMemberModal');
             if (expelMemberModal) {
@@ -488,74 +695,26 @@
                     document.getElementById('leaveGroupForm').submit();
                 });
             }
+        }
 
-            // Manejo del chat (si el usuario es participante)
-            const chatInput = document.getElementById('chatInput');
-            const sendBtn = document.getElementById('sendBtn');
-            const chatMessages = document.getElementById('chatMessages');
-
-            if (sendBtn && chatInput) {
-                sendBtn.addEventListener('click', function () {
-                    sendMessage();
-                });
-
-                chatInput.addEventListener('keydown', function (e) {
-                    if (e.key === 'Enter') {
-                        e.preventDefault();
-                        sendMessage();
-                    }
-                });
-
-                function sendMessage() {
-                    const message = chatInput.value.trim();
-                    if (message) {
-                        // Enviar mensaje al servidor
-                        fetch([[${ '/grupos/' + grupo.idGrupo + '/chat' }]], {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="_csrf"]').getAttribute('content')
-                            },
-                            body: JSON.stringify({ mensaje: message })
-                        })
-                            .then(response => {
-                                if (response.ok) {
-                                    // Limpiar input
-                                    chatInput.value = '';
-
-                                    // Añadir mensaje a la interfaz (simulación)
-                                    const currentUser = [[${#authentication.name }]];
-                                    const userInitials = currentUser.substring(0, 2).toUpperCase();
-
-                                    const messageElement = document.createElement('div');
-                                    messageElement.className = 'd-flex justify-content-end mb-3';
-                                    messageElement.innerHTML = `
-                                    <div>
-                                        <div class="chat-bubble bg-primary text-white">
-                                            <p class="mb-0">${message}</p>
-                                        </div>
-                                        <div class="chat-info text-end">
-                                            <span class="fw-medium">Tú</span> •
-                                            <span class="text-muted small">Ahora</span>
-                                        </div>
-                                    </div>
-                                    <div class="avatar-small bg-info text-white ms-2">${userInitials}</div>
-                                `;
-
-                                    chatMessages.appendChild(messageElement);
-
-                                    // Scroll al final del chat
-                                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                                }
-                            })
-                            .catch(error => {
-                                console.error('Error:', error);
-                            });
-                    }
-                }
+        // CSS adicional para avatares
+        const additionalCSS = `
+            .avatar-sm {
+                width: 35px;
+                height: 35px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 14px;
+                font-weight: bold;
             }
-        });
-    </script> -->
+        `;
+        const styleSheet = document.createElement('style');
+        styleSheet.type = 'text/css';
+        styleSheet.innerText = additionalCSS;
+        document.head.appendChild(styleSheet);
+    </script>
 </body>
 
 </html>

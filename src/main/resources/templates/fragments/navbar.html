@@ -47,8 +47,10 @@
                     <!-- Notificaciones -->
                     <a th:href="@{/notificaciones}" class="position-relative text-white text-decoration-none">
                         <i class="bi bi-bell fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
-                            2
+                        <span th:if="${notificacionesNoLeidas > 0}" 
+                              class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                              th:text="${notificacionesNoLeidas}">
+                            0
                         </span>
                     </a>
 

@@ -8,6 +8,9 @@ import org.springframework.ui.Model;
 
 import com.add.venture.dto.PerfilUsuarioDTO;
 import com.add.venture.dto.RegistroUsuarioDTO;
+import com.add.venture.model.Usuario;
+import com.add.venture.repository.UsuarioRepository;
+import com.add.venture.service.INotificacionService;
 import com.add.venture.service.IUsuarioService;
 
 @Component
@@ -15,6 +18,12 @@ public class UsuarioAutenticadoHelper {
 
     @Autowired
     private IUsuarioService usuarioService;
+    
+    @Autowired
+    private INotificacionService notificacionService;
+    
+    @Autowired
+    private UsuarioRepository usuarioRepository;
 
     public void cargarDatosUsuarioParaNavbar(Model model) {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -29,8 +38,18 @@ public class UsuarioAutenticadoHelper {
                 model.addAttribute("iniciales", usuario.getIniciales());
                 model.addAttribute("username", usuario);
 
-                model.addAttribute("iniciales", usuario.getIniciales());
-                model.addAttribute("username", usuario);
+                // Cargar número de notificaciones no leídas
+                try {
+                    Usuario usuarioEntity = usuarioRepository.findByEmail(correo).orElse(null);
+                    if (usuarioEntity != null) {
+                        long notificacionesNoLeidas = notificacionService.contarNotificacionesNoLeidas(usuarioEntity);
+                        model.addAttribute("notificacionesNoLeidas", notificacionesNoLeidas);
+                    } else {
+                        model.addAttribute("notificacionesNoLeidas", 0L);
+                    }
+                } catch (Exception e) {
+                    model.addAttribute("notificacionesNoLeidas", 0L);
+                }
             }
         }
     }

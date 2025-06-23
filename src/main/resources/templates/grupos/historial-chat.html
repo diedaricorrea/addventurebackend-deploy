@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Historial del Chat - AddVenture</title>
+    <!-- BLOQUE DE LINKS FRAGMENTS -->
+    <th:block th:replace="~{fragments/head :: head-links}"></th:block>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        .chat-message {
+            margin-bottom: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+        }
+        .chat-message img {
+            max-width: 300px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .message-meta {
+            margin-left: 15px;
+        }
+        .message-date {
+            color: #6c757d;
+            font-size: 0.875rem;
+        }
+        .message-content {
+            margin-left: 65px;
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+        .stats-item {
+            text-align: center;
+        }
+        .stats-number {
+            font-size: 2rem;
+            font-weight: bold;
+            display: block;
+        }
+        .stats-label {
+            font-size: 0.875rem;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: navbar}"></header>
+
+    <main class="container py-4 py-md-5">
+        <div class="row">
+            <div class="col-lg-10 mx-auto">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <h1 class="h2 mb-1">
+                            <i class="bi bi-chat-square-text me-2"></i>Historial del Chat
+                        </h1>
+                        <p class="text-muted mb-0" th:text="${grupo.nombreViaje}">Nombre del Grupo</p>
+                    </div>
+                    <div>
+                        <a th:href="@{/grupos/{id}(id=${grupo.idGrupo})}" class="btn btn-outline-primary me-2">
+                            <i class="bi bi-arrow-left me-1"></i>Volver al grupo
+                        </a>
+                        <button onclick="window.print()" class="btn btn-outline-secondary">
+                            <i class="bi bi-printer me-1"></i>Imprimir
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Estadísticas del chat -->
+                <div class="stats-card">
+                    <div class="row">
+                        <div class="col-md-3 stats-item">
+                            <span class="stats-number" th:text="${mensajes != null ? mensajes.size() : 0}">0</span>
+                            <span class="stats-label">Mensajes totales</span>
+                        </div>
+                        <div class="col-md-3 stats-item">
+                            <span class="stats-number" id="imagenCount">0</span>
+                            <span class="stats-label">Imágenes compartidas</span>
+                        </div>
+                        <div class="col-md-3 stats-item">
+                            <span class="stats-number" th:text="${grupo.participantes != null ? grupo.participantes.size() : 0}">0</span>
+                            <span class="stats-label">Participantes</span>
+                        </div>
+                        <div class="col-md-3 stats-item">
+                            <span class="stats-number" th:text="${#temporals.format(grupo.fechaCreacion, 'dd/MM/yyyy')}">Fecha</span>
+                            <span class="stats-label">Fecha del viaje</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mensajes del chat -->
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">
+                            <i class="bi bi-clock-history me-2"></i>Mensajes del Chat
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div th:if="${mensajes != null and !mensajes.isEmpty()}">
+                            <div th:each="mensaje : ${mensajes}" class="chat-message">
+                                <div class="message-header">
+                                    <div class="user-avatar" 
+                                         th:text="${mensaje.remitente != null ? #strings.substring(mensaje.remitente.nombre, 0, 1) + #strings.substring(mensaje.remitente.apellidos, 0, 1) : 'U'}">
+                                        U
+                                    </div>
+                                    <div class="message-meta">
+                                        <div class="fw-bold" 
+                                             th:text="${mensaje.remitente != null ? mensaje.remitente.nombre + ' ' + mensaje.remitente.apellidos : 'Usuario desconocido'}">
+                                            Usuario
+                                        </div>
+                                        <div class="message-date" 
+                                             th:text="${#temporals.format(mensaje.fechaEnvio, 'dd/MM/yyyy HH:mm')}">
+                                            Fecha
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="message-content">
+                                    <!-- Mensaje de texto -->
+                                    <div th:if="${mensaje.tipoMensaje == 'texto'}" 
+                                         th:text="${mensaje.mensaje}">
+                                        Mensaje de texto
+                                    </div>
+                                    
+                                    <!-- Mensaje con imagen -->
+                                    <div th:if="${mensaje.tipoMensaje == 'imagen'}">
+                                        <p th:text="${mensaje.mensaje}">Descripción de la imagen</p>
+                                        <img th:src="${mensaje.archivoUrl}" 
+                                             th:alt="${mensaje.archivoNombre}"
+                                             class="img-fluid">
+                                        <small class="text-muted d-block mt-2">
+                                            Archivo: <span th:text="${mensaje.archivoNombre}">imagen.jpg</span>
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Estado vacío -->
+                        <div th:if="${mensajes == null or mensajes.isEmpty()}" 
+                             class="text-center py-5">
+                            <i class="bi bi-chat-square text-muted" style="font-size: 4rem;"></i>
+                            <h4 class="text-muted mt-3">No hay mensajes en el historial</h4>
+                            <p class="text-muted">Este grupo no tiene mensajes en el chat.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Información del grupo -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-info-circle me-2"></i>Información del Viaje
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <strong>Destino:</strong> 
+                                <span th:text="${grupo.viaje != null ? grupo.viaje.destinoPrincipal : 'No especificado'}">Destino</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Tipo de viaje:</strong> 
+                                <span th:text="${grupo.viaje != null && grupo.viaje.tipo != null ? grupo.viaje.tipo.nombreTipo : 'No especificado'}">Tipo</span>
+                            </div>
+                        </div>
+                        <div class="row mt-2" th:if="${grupo.viaje != null}">
+                            <div class="col-md-6">
+                                <strong>Fecha de inicio:</strong> 
+                                <span th:text="${#temporals.format(grupo.viaje.fechaInicio, 'dd/MM/yyyy')}">Fecha inicio</span>
+                            </div>
+                            <div class="col-md-6">
+                                <strong>Fecha de fin:</strong> 
+                                <span th:text="${#temporals.format(grupo.viaje.fechaFin, 'dd/MM/yyyy')}">Fecha fin</span>
+                            </div>
+                        </div>
+                        <div class="mt-3" th:if="${grupo.viaje != null && grupo.viaje.descripcion != null}">
+                            <strong>Descripción:</strong>
+                            <p class="mt-2 mb-0" th:text="${grupo.viaje.descripcion}">Descripción del viaje</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Participantes del viaje -->
+                <div class="card mt-4" th:if="${grupo.participantes != null && !grupo.participantes.isEmpty()}">
+                    <div class="card-header">
+                        <h6 class="mb-0">
+                            <i class="bi bi-people me-2"></i>Participantes del Viaje
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Organizador -->
+                            <div class="col-md-6 mb-3">
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-3"
+                                         th:text="${#strings.substring(grupo.creador.nombre, 0, 1) + #strings.substring(grupo.creador.apellidos, 0, 1)}">
+                                        OR
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold" 
+                                             th:text="${grupo.creador.nombre + ' ' + grupo.creador.apellidos}">
+                                            Organizador
+                                        </div>
+                                        <small class="text-muted">Organizador del grupo</small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Otros participantes -->
+                            <div class="col-md-6 mb-3" 
+                                 th:each="participante : ${grupo.participantes}"
+                                 th:if="${participante.usuario != grupo.creador && participante.estadoSolicitud.name() == 'ACEPTADO'}">
+                                <div class="d-flex align-items-center">
+                                    <div class="user-avatar me-3"
+                                         th:text="${#strings.substring(participante.usuario.nombre, 0, 1) + #strings.substring(participante.usuario.apellidos, 0, 1)}">
+                                        PA
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold" 
+                                             th:text="${participante.usuario.nombre + ' ' + participante.usuario.apellidos}">
+                                            Participante
+                                        </div>
+                                        <small class="text-muted">Miembro del grupo</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+
+    <!-- BLOQUE DE SCRIPTS FRAGMENTS -->
+    <th:block th:replace="~{fragments/head :: scripts}"></th:block>
+
+    <!-- CSS para impresión -->
+    <style media="print">
+        .btn, .navbar, footer {
+            display: none !important;
+        }
+        .stats-card {
+            background: #f8f9fa !important;
+            color: #333 !important;
+        }
+        .card-header.bg-primary {
+            background: #333 !important;
+        }
+        .user-avatar {
+            background: #333 !important;
+        }
+    </style>
+
+    <script th:inline="javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            // Contar imágenes
+            const mensajes = /*[[${mensajes}]]*/ [];
+            const imagenCount = mensajes.filter(mensaje => mensaje.tipoMensaje === 'imagen').length;
+            document.getElementById('imagenCount').textContent = imagenCount;
+        });
+    </script>
+
+</body>
+
+</html> 

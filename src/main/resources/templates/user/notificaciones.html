@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notificaciones - AddVenture</title>
+    <!-- BLOQUE DE LINKS FRAGMENTS -->
+    <th:block th:replace="~{fragments/head :: head-links}"></th:block>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" th:href="@{/css/styles.css}">
+    <style>
+        .notification-card {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+        .notification-card:hover {
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .notification-unread {
+            border-left-color: #007bff;
+            background-color: #f8f9fa;
+        }
+        .notification-read {
+            border-left-color: #6c757d;
+        }
+        .notification-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .user-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #007bff, #0056b3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 18px;
+        }
+    </style>
+</head>
+
+<body>
+    <header th:replace="~{fragments/navbar :: navbar}"></header>
+
+    <main class="container py-4 py-md-5">
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <!-- Header -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1 class="h2 mb-0">
+                        <i class="bi bi-bell me-2"></i>Notificaciones
+                    </h1>
+                    <button type="button" class="btn btn-outline-primary" id="marcarTodasLeidas">
+                        <i class="bi bi-check-all me-1"></i>Marcar todas como leídas
+                    </button>
+                </div>
+
+                <!-- Mensaje de error si existe -->
+                <div th:if="${error}" class="alert alert-danger" role="alert">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    <span th:text="${error}">Error</span>
+                </div>
+
+                <!-- Mensaje de éxito si existe -->
+                <div th:if="${mensaje}" class="alert alert-success" role="alert">
+                    <i class="bi bi-check-circle me-2"></i>
+                    <span th:text="${mensaje}">Mensaje</span>
+                </div>
+
+                <!-- Notificaciones -->
+                <div th:if="${notificaciones != null and !notificaciones.isEmpty()}">
+                    <div th:each="notificacion : ${notificaciones}" class="card notification-card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start">
+                                <!-- Icono según tipo de notificación -->
+                                <div class="me-3">
+                                    <div class="user-avatar">
+                                        <i class="bi bi-person-plus" th:if="${notificacion.tipo == 'SOLICITUD_UNION'}"></i>
+                                        <i class="bi bi-bell" th:unless="${notificacion.tipo == 'SOLICITUD_UNION'}"></i>
+                                    </div>
+                                </div>
+
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="mb-0 fw-bold">
+                                            <span th:if="${notificacion.tipo == 'SOLICITUD_UNION'}">Solicitud de unión</span>
+                                            <span th:unless="${notificacion.tipo == 'SOLICITUD_UNION'}" th:text="${notificacion.tipo}">Tipo</span>
+                                        </h6>
+                                        <small class="text-muted" th:text="${#temporals.format(notificacion.fecha, 'dd/MM/yyyy HH:mm')}">
+                                            Fecha
+                                        </small>
+                                    </div>
+
+                                    <p class="mb-0 text-secondary" th:text="${notificacion.contenido}">
+                                        Contenido de la notificación
+                                    </p>
+
+                                    <!-- Badge de estado -->
+                                    <div class="mt-2">
+                                        <span th:if="${!notificacion.leido}" class="badge bg-primary">
+                                            <i class="bi bi-circle-fill me-1" style="font-size: 0.5em;"></i>Nuevo
+                                        </span>
+                                        <span th:if="${notificacion.leido}" class="badge bg-secondary">
+                                            <i class="bi bi-check me-1"></i>Leído
+                                        </span>
+                                    </div>
+
+                                    <!-- Acciones para solicitudes de unión -->
+                                    <div th:if="${notificacion.tipo == 'SOLICITUD_UNION' and !notificacion.leido}">
+                                        
+                                        <!-- Solo mostrar acciones si tenemos datos completos -->
+                                        <div th:if="${notificacion.grupo != null and notificacion.solicitante != null}">
+                                            <div class="notification-actions">
+                                                <form th:action="@{/notificaciones/responder-solicitud}" method="post" style="display: inline;">
+                                                    <input type="hidden" name="idNotificacion" th:value="${notificacion.idNotificacion}">
+                                                    <input type="hidden" name="idGrupo" th:value="${notificacion.grupo.idGrupo}">
+                                                    <input type="hidden" name="idSolicitante" th:value="${notificacion.solicitante.idUsuario}">
+                                                    <input type="hidden" name="accion" value="aceptar">
+                                                    <button type="submit" class="btn btn-success btn-sm">
+                                                        <i class="bi bi-check-circle me-1"></i>Aceptar
+                                                    </button>
+                                                </form>
+                                                
+                                                <form th:action="@{/notificaciones/responder-solicitud}" method="post" style="display: inline;">
+                                                    <input type="hidden" name="idNotificacion" th:value="${notificacion.idNotificacion}">
+                                                    <input type="hidden" name="idGrupo" th:value="${notificacion.grupo.idGrupo}">
+                                                    <input type="hidden" name="idSolicitante" th:value="${notificacion.solicitante.idUsuario}">
+                                                    <input type="hidden" name="accion" value="rechazar">
+                                                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                                                        <i class="bi bi-x-circle me-1"></i>Rechazar
+                                                    </button>
+                                                </form>
+                                                
+                                                <button type="button" class="btn btn-outline-info btn-sm" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#verPerfilModal">
+                                                    <i class="bi bi-eye me-1"></i>Ver perfil
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Mensaje de error si faltan datos -->
+                                        <div th:if="${notificacion.grupo == null or notificacion.solicitante == null}" 
+                                             class="alert alert-warning mt-2">
+                                            <i class="bi bi-exclamation-triangle me-1"></i>
+                                            Datos de la solicitud incompletos. No se pueden mostrar las acciones.
+                                        </div>
+                                    </div>
+
+                                    <!-- Botón para marcar como leída -->
+                                    <div th:if="${!notificacion.leido}" class="mt-2">
+                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none marcar-leida"
+                                                th:data-notification-id="${notificacion.idNotificacion}">
+                                            <i class="bi bi-check me-1"></i>Marcar como leída
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Estado vacío -->
+                <div th:if="${notificaciones == null or notificaciones.isEmpty()}" 
+                     class="text-center py-5">
+                    <i class="bi bi-bell-slash text-muted" style="font-size: 4rem;"></i>
+                    <h3 class="text-muted mt-3">No tienes notificaciones</h3>
+                    <p class="text-muted">Cuando recibas notificaciones, aparecerán aquí.</p>
+                    <a th:href="@{/grupos}" class="btn btn-primary">
+                        <i class="bi bi-search me-1"></i>Explorar grupos
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal para ver perfil -->
+    <div class="modal fade" id="verPerfilModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Perfil del usuario</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <h5>Información del usuario</h5>
+                        <p class="text-muted">Perfil del solicitante</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer th:replace="~{fragments/footer :: footer}"></footer>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Marcar notificación individual como leída
+            document.querySelectorAll('.marcar-leida').forEach(button => {
+                button.addEventListener('click', function() {
+                    const notificationId = this.dataset.notificationId;
+                    fetch(`/notificaciones/${notificationId}/marcar-leida`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                    .then(response => response.text())
+                    .then(data => {
+                        location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al marcar la notificación como leída');
+                    });
+                });
+            });
+
+            // Marcar todas las notificaciones como leídas
+            document.getElementById('marcarTodasLeidas').addEventListener('click', function() {
+                fetch('/notificaciones/marcar-todas-leidas', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => response.text())
+                .then(data => {
+                    location.reload();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error al marcar las notificaciones como leídas');
+                });
+            });
+        });
+    </script>
+</body>
+
+</html> 
