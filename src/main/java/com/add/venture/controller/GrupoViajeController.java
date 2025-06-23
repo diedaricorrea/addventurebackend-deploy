@@ -1,6 +1,7 @@
 package com.add.venture.controller;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,20 +90,30 @@ public class GrupoViajeController {
         usuarioAutenticadoHelper.cargarDatosUsuarioParaNavbar(model);
         usuarioAutenticadoHelper.cargarUsuarioParaPerfil(model);
 
-        // Cargar todos los grupos 
-        List<GrupoViaje> todosLosGrupos = grupoViajeRepository.findAll();
+        // Cargar solo grupos activos
+        List<GrupoViaje> todosLosGrupos = grupoViajeRepository.findByEstado("activo");
         
-        // Procesar cada grupo para incluir solo participantes aceptados en el conteo y visualización
+        // Filtrar grupos que aún tienen cupo disponible
+        List<GrupoViaje> gruposConCupo = new ArrayList<>();
+        
         for (GrupoViaje grupo : todosLosGrupos) {
-            // Filtrar solo participantes aceptados
-            List<ParticipanteGrupo> participantesAceptados = participanteGrupoRepository
-                    .findByGrupoAndEstadoSolicitud(grupo, EstadoSolicitud.ACEPTADO);
+            // Contar participantes aceptados (sin incluir al creador)
+            long participantesAceptados = participanteGrupoRepository.countByGrupoAndEstadoSolicitud(grupo, EstadoSolicitud.ACEPTADO);
             
-            // Convertir lista a set y reemplazar la lista de participantes con solo los aceptados
-            grupo.setParticipantes(new java.util.HashSet<>(participantesAceptados));
+            // Solo incluir grupos que aún tienen cupo (participantes + creador < maxParticipantes)
+            if ((participantesAceptados + 1) < grupo.getMaxParticipantes()) {
+                // Filtrar solo participantes aceptados para la visualización
+                List<ParticipanteGrupo> participantesAceptadosList = participanteGrupoRepository
+                        .findByGrupoAndEstadoSolicitud(grupo, EstadoSolicitud.ACEPTADO);
+                
+                // Convertir lista a set y reemplazar la lista de participantes con solo los aceptados
+                grupo.setParticipantes(new java.util.HashSet<>(participantesAceptadosList));
+                
+                gruposConCupo.add(grupo);
+            }
         }
         
-        model.addAttribute("grupos", todosLosGrupos);
+        model.addAttribute("grupos", gruposConCupo);
 
         // Cargar tipos de viaje para los filtros
         model.addAttribute("tiposViaje", grupoViajeService.obtenerTiposViaje());
@@ -462,6 +473,9 @@ public class GrupoViajeController {
             String email = auth.getName();
             Usuario usuario = usuarioRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            // Agregar usuarioId para WebSocket global
+            model.addAttribute("usuarioId", usuario.getIdUsuario());
 
             // 1. Grupos creados por el usuario
             List<GrupoViaje> gruposCreados = grupoViajeRepository.findByCreador(usuario);

@@ -4,6 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- CSRF Token -->
+    <meta name="_csrf" th:content="${_csrf.token}"/>
+    <meta name="_csrf_header" th:content="${_csrf.headerName}"/>
     <title>Detalle de Grupo - AddVenture</title>
     <!-- BLOQUE DE LINKS FRAGMENTS -->
     <th:block th:replace="~{fragments/head :: head-links}"></th:block>
@@ -623,26 +626,52 @@
                 const file = e.target.files[0];
                 if (!file) return;
 
+                // Validar tipo de archivo
+                if (!file.type.startsWith('image/')) {
+                    alert('Solo se permiten archivos de imagen');
+                    imageInput.value = '';
+                    return;
+                }
+
+                // Validar tamaño (máximo 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    alert('La imagen es demasiado grande. Máximo 5MB');
+                    imageInput.value = '';
+                    return;
+                }
+
                 const formData = new FormData();
                 formData.append('imagen', file);
                 formData.append('descripcion', '');
 
+                // Obtener token CSRF
+                const token = document.querySelector('meta[name="_csrf"]').content;
+                const header = document.querySelector('meta[name="_csrf_header"]').content;
+
                 fetch(`/chat/grupo/${grupoId}/enviar-imagen`, {
                     method: 'POST',
+                    headers: {
+                        [header]: token
+                    },
                     body: formData
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.idMensaje) {
                         imageInput.value = '';
                         // No necesitamos recargar todos los mensajes, WebSocket se encarga
                     } else {
-                        alert('Error al enviar imagen');
+                        alert('Error al enviar imagen: ' + (data.message || 'Error desconocido'));
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error al enviar imagen');
+                    alert('Error al enviar imagen: ' + error.message);
                 });
             });
 
@@ -670,29 +699,57 @@
             function appendMessage(mensaje) {
                 const chatMessages = document.getElementById('chatMessages');
                 const messageDiv = document.createElement('div');
-                messageDiv.className = 'mb-3 d-flex align-items-start';
+                
+                const currentUserId = /*[[${usuarioId}]]*/ null;
+                const isCurrentUser = mensaje.remitente && mensaje.remitente.idUsuario === currentUserId;
 
-                const isCurrentUser = mensaje.remitente && mensaje.remitente.email === '[[${#authentication.name}]]';
-
-                messageDiv.innerHTML = `
-                    <div class="me-3">
-                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
-                            ${mensaje.remitente ? mensaje.remitente.nombre.charAt(0).toUpperCase() : 'U'}
+                if (isCurrentUser) {
+                    // Mensaje del usuario actual (derecha)
+                    messageDiv.className = 'mb-3 d-flex justify-content-end';
+                    messageDiv.innerHTML = `
+                        <div class="d-flex align-items-start flex-row-reverse" style="max-width: 70%;">
+                            <div class="ms-3">
+                                <div class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center">
+                                    ${mensaje.remitente.nombre.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1 justify-content-end">
+                                    <small class="text-muted me-2">${formatDate(mensaje.fechaEnvio)}</small>
+                                    <strong>Tú</strong>
+                                </div>
+                                <div class="message-content bg-primary text-white p-3 rounded-3">
+                                    ${mensaje.tipoMensaje === 'imagen' ? 
+                                        `<img src="${mensaje.archivoUrl}" class="img-fluid rounded mb-2" style="max-width: 250px;">
+                                         ${mensaje.mensaje !== 'Imagen compartida' ? `<p class="mb-0">${mensaje.mensaje}</p>` : ''}` : 
+                                        `<p class="mb-0">${mensaje.mensaje}</p>`}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center mb-1">
-                            <strong class="me-2">${mensaje.remitente ? mensaje.remitente.nombre + ' ' + mensaje.remitente.apellidos : 'Usuario'}</strong>
-                            <small class="text-muted">${formatDate(mensaje.fechaEnvio)}</small>
+                    `;
+                } else {
+                    // Mensaje de otros usuarios (izquierda)
+                    messageDiv.className = 'mb-3 d-flex align-items-start';
+                    messageDiv.innerHTML = `
+                        <div class="me-3">
+                            <div class="avatar-sm bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center">
+                                ${mensaje.remitente ? mensaje.remitente.nombre.charAt(0).toUpperCase() : 'U'}
+                            </div>
                         </div>
-                        <div class="message-content">
-                            ${mensaje.tipoMensaje === 'imagen' ? 
-                                `<img src="${mensaje.archivoUrl}" class="img-fluid rounded mb-2" style="max-width: 300px;">
-                                 <p class="mb-0">${mensaje.mensaje}</p>` : 
-                                `<p class="mb-0">${mensaje.mensaje}</p>`}
+                        <div class="flex-grow-1" style="max-width: 70%;">
+                            <div class="d-flex align-items-center mb-1">
+                                <strong class="me-2">${mensaje.remitente ? mensaje.remitente.nombre + ' ' + mensaje.remitente.apellidos : 'Usuario'}</strong>
+                                <small class="text-muted">${formatDate(mensaje.fechaEnvio)}</small>
+                            </div>
+                            <div class="message-content bg-light p-3 rounded-3">
+                                ${mensaje.tipoMensaje === 'imagen' ? 
+                                    `<img src="${mensaje.archivoUrl}" class="img-fluid rounded mb-2" style="max-width: 250px;">
+                                     ${mensaje.mensaje !== 'Imagen compartida' ? `<p class="mb-0">${mensaje.mensaje}</p>` : ''}` : 
+                                    `<p class="mb-0">${mensaje.mensaje}</p>`}
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
 
                 chatMessages.appendChild(messageDiv);
                 chatMessages.scrollTop = chatMessages.scrollHeight;
@@ -715,32 +772,60 @@
             if (!Array.isArray(mensajes)) return;
 
             chatMessages.innerHTML = '';
-
+            
+            const currentUserId = /*[[${usuarioId}]]*/ null;
+            
             mensajes.forEach(mensaje => {
                 const messageDiv = document.createElement('div');
-                messageDiv.className = 'mb-3 d-flex align-items-start';
+                const isCurrentUser = mensaje.remitente && mensaje.remitente.idUsuario === currentUserId;
 
-                const isCurrentUser = mensaje.remitente && mensaje.remitente.email === '[[${#authentication.name}]]';
-
-                messageDiv.innerHTML = `
-                    <div class="me-3">
-                        <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
-                            ${mensaje.remitente ? mensaje.remitente.nombre.charAt(0).toUpperCase() : 'U'}
+                if (isCurrentUser) {
+                    // Mensaje del usuario actual (derecha)
+                    messageDiv.className = 'mb-3 d-flex justify-content-end';
+                    messageDiv.innerHTML = `
+                        <div class="d-flex align-items-start flex-row-reverse" style="max-width: 70%;">
+                            <div class="ms-3">
+                                <div class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center">
+                                    ${mensaje.remitente.nombre.charAt(0).toUpperCase()}
+                                </div>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-1 justify-content-end">
+                                    <small class="text-muted me-2">${formatDate(mensaje.fechaEnvio)}</small>
+                                    <strong>Tú</strong>
+                                </div>
+                                <div class="message-content bg-primary text-white p-3 rounded-3">
+                                    ${mensaje.tipoMensaje === 'imagen' ? 
+                                        `<img src="${mensaje.archivoUrl}" class="img-fluid rounded mb-2" style="max-width: 250px;">
+                                         ${mensaje.mensaje !== 'Imagen compartida' ? `<p class="mb-0">${mensaje.mensaje}</p>` : ''}` : 
+                                        `<p class="mb-0">${mensaje.mensaje}</p>`}
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                    <div class="flex-grow-1">
-                        <div class="d-flex align-items-center mb-1">
-                            <strong class="me-2">${mensaje.remitente ? mensaje.remitente.nombre + ' ' + mensaje.remitente.apellidos : 'Usuario'}</strong>
-                            <small class="text-muted">${formatDate(mensaje.fechaEnvio)}</small>
+                    `;
+                } else {
+                    // Mensaje de otros usuarios (izquierda)
+                    messageDiv.className = 'mb-3 d-flex align-items-start';
+                    messageDiv.innerHTML = `
+                        <div class="me-3">
+                            <div class="avatar-sm bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center">
+                                ${mensaje.remitente ? mensaje.remitente.nombre.charAt(0).toUpperCase() : 'U'}
+                            </div>
                         </div>
-                        <div class="message-content">
-                            ${mensaje.tipoMensaje === 'imagen' ? 
-                                `<img src="${mensaje.archivoUrl}" class="img-fluid rounded mb-2" style="max-width: 300px;">
-                                 <p class="mb-0">${mensaje.mensaje}</p>` : 
-                                `<p class="mb-0">${mensaje.mensaje}</p>`}
+                        <div class="flex-grow-1" style="max-width: 70%;">
+                            <div class="d-flex align-items-center mb-1">
+                                <strong class="me-2">${mensaje.remitente ? mensaje.remitente.nombre + ' ' + mensaje.remitente.apellidos : 'Usuario'}</strong>
+                                <small class="text-muted">${formatDate(mensaje.fechaEnvio)}</small>
+                            </div>
+                            <div class="message-content bg-light p-3 rounded-3">
+                                ${mensaje.tipoMensaje === 'imagen' ? 
+                                    `<img src="${mensaje.archivoUrl}" class="img-fluid rounded mb-2" style="max-width: 250px;">
+                                     ${mensaje.mensaje !== 'Imagen compartida' ? `<p class="mb-0">${mensaje.mensaje}</p>` : ''}` : 
+                                    `<p class="mb-0">${mensaje.mensaje}</p>`}
+                            </div>
                         </div>
-                    </div>
-                `;
+                    `;
+                }
 
                 chatMessages.appendChild(messageDiv);
             });
@@ -787,7 +872,7 @@
             }
         }
 
-        // CSS adicional para avatares
+        // CSS adicional para avatares y chat
         const additionalCSS = `
             .avatar-sm {
                 width: 35px;
@@ -798,6 +883,39 @@
                 justify-content: center;
                 font-size: 14px;
                 font-weight: bold;
+            }
+            
+            .message-content {
+                word-wrap: break-word;
+                max-width: 100%;
+            }
+            
+            .message-content img {
+                border-radius: 8px;
+                cursor: pointer;
+                transition: transform 0.2s;
+            }
+            
+            .message-content img:hover {
+                transform: scale(1.05);
+            }
+            
+            .chat-container {
+                background: #f8f9fa;
+                border-radius: 8px 8px 0 0;
+            }
+            
+            .message-content.bg-primary {
+                background: linear-gradient(135deg, #007bff, #0056b3) !important;
+                border-radius: 18px 18px 4px 18px !important;
+                box-shadow: 0 2px 8px rgba(0,123,255,0.2);
+            }
+            
+            .message-content.bg-light {
+                background: #ffffff !important;
+                border: 1px solid #e9ecef;
+                border-radius: 18px 18px 18px 4px !important;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
         `;
         const styleSheet = document.createElement('style');

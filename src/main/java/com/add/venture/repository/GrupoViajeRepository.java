@@ -45,4 +45,12 @@ public interface GrupoViajeRepository extends JpaRepository<GrupoViaje, Long> {
      * @return una lista de grupos creados por el usuario
      */
     List<GrupoViaje> findByCreador(Usuario creador);
+    
+    /**
+     * Busca todos los grupos por estado
+     * 
+     * @param estado el estado del grupo (ej: "activo", "cerrado", "finalizado")
+     * @return una lista de grupos con el estado especificado
+     */
+    List<GrupoViaje> findByEstado(String estado);
 }

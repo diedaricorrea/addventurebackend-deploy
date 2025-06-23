@@ -52,7 +52,7 @@ public class ChatController {
     @Autowired
     private SimpMessagingTemplate messagingTemplate;
 
-    private final String UPLOAD_DIR = "uploads/chat/";
+    private final String UPLOAD_DIR = "uploads/chat";
 
     @GetMapping("/grupo/{idGrupo}/mensajes")
     @ResponseBody
@@ -138,48 +138,85 @@ public class ChatController {
             @RequestParam("imagen") MultipartFile imagen,
             @RequestParam(value = "descripcion", required = false) String descripcion) {
         try {
+            System.out.println("=== INICIO ENVIAR IMAGEN ===");
+            System.out.println("Recibida imagen: " + imagen.getOriginalFilename() + ", Tamaño: " + imagen.getSize() + ", Tipo: " + imagen.getContentType());
+            
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
             if (auth == null || !auth.isAuthenticated() || auth.getName().equals("anonymousUser")) {
+                System.out.println("ERROR: Usuario no autenticado");
                 return ResponseEntity.badRequest().body("Usuario no autenticado");
             }
+
+            System.out.println("Usuario autenticado: " + auth.getName());
 
             String email = auth.getName();
             Usuario usuario = usuarioRepository.findByEmail(email)
                     .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
+            System.out.println("Usuario encontrado: " + usuario.getNombre());
+
             GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
                     .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+
+            System.out.println("Grupo encontrado: " + grupo.getNombreViaje());
 
             // Verificar que el usuario es participante aceptado del grupo
             Optional<ParticipanteGrupo> participante = participanteGrupoRepository.findByUsuarioAndGrupo(usuario, grupo);
             if (participante.isEmpty() || participante.get().getEstadoSolicitud() != EstadoSolicitud.ACEPTADO) {
+                System.out.println("ERROR: Usuario no tiene acceso al chat");
                 return ResponseEntity.badRequest().body("No tienes acceso al chat de este grupo");
             }
 
+            System.out.println("Usuario tiene acceso al chat");
+
             if (imagen.isEmpty()) {
+                System.out.println("ERROR: Imagen vacía");
                 return ResponseEntity.badRequest().body("No se ha seleccionado ninguna imagen");
             }
 
             // Validar tipo de archivo
             String contentType = imagen.getContentType();
-            if (!contentType.startsWith("image/")) {
-                return ResponseEntity.badRequest().body("Solo se permiten archivos de imagen");
+            if (contentType == null || !contentType.startsWith("image/")) {
+                System.out.println("ERROR: Tipo de archivo inválido: " + contentType);
+                return ResponseEntity.badRequest().body("Solo se permiten archivos de imagen. Tipo recibido: " + contentType);
             }
+
+            System.out.println("Tipo de archivo válido: " + contentType);
 
             // Generar nombre único para el archivo
             String originalFileName = imagen.getOriginalFilename();
+            if (originalFileName == null || originalFileName.isEmpty()) {
+                System.out.println("ERROR: Nombre de archivo nulo o vacío");
+                return ResponseEntity.badRequest().body("Nombre de archivo inválido");
+            }
+            
+            if (!originalFileName.contains(".")) {
+                System.out.println("ERROR: Archivo sin extensión");
+                return ResponseEntity.badRequest().body("Archivo sin extensión");
+            }
+            
             String fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
             String fileName = UUID.randomUUID().toString() + fileExtension;
 
-            // Crear directorio si no existe
-            Path uploadPath = Paths.get(UPLOAD_DIR);
+            System.out.println("Nombre de archivo generado: " + fileName);
+
+            // Crear directorio si no existe - usando ruta absoluta
+            Path projectRoot = Paths.get("").toAbsolutePath();
+            Path uploadPath = projectRoot.resolve(UPLOAD_DIR);
+            System.out.println("Ruta de upload: " + uploadPath.toAbsolutePath());
+            
             if (!Files.exists(uploadPath)) {
+                System.out.println("Creando directorio: " + uploadPath);
                 Files.createDirectories(uploadPath);
             }
 
             // Guardar archivo
             Path filePath = uploadPath.resolve(fileName);
+            System.out.println("Guardando archivo en: " + filePath.toAbsolutePath());
+            
             imagen.transferTo(filePath.toFile());
+            
+            System.out.println("Archivo guardado exitosamente");
 
             // Crear mensaje con imagen
             MensajeGrupo nuevoMensaje = MensajeGrupo.builder()
@@ -188,20 +225,29 @@ public class ChatController {
                     .remitente(usuario)
                     .fechaEnvio(LocalDateTime.now())
                     .tipoMensaje("imagen")
-                    .archivoUrl("/" + UPLOAD_DIR + fileName)
+                    .archivoUrl("/" + UPLOAD_DIR + "/" + fileName)
                     .archivoNombre(originalFileName)
                     .estado("activo")
                     .build();
 
+            System.out.println("Guardando mensaje en base de datos...");
             mensajeGrupoRepository.save(nuevoMensaje);
+            System.out.println("Mensaje guardado con ID: " + nuevoMensaje.getIdMensaje());
             
             // Enviar mensaje por WebSocket a todos los participantes del grupo
+            System.out.println("Enviando por WebSocket...");
             messagingTemplate.convertAndSend("/topic/grupo/" + idGrupo, nuevoMensaje);
+            System.out.println("Mensaje enviado por WebSocket exitosamente");
             
+            System.out.println("=== FIN ENVIAR IMAGEN EXITOSO ===");
             return ResponseEntity.ok(nuevoMensaje);
         } catch (IOException e) {
+            System.out.println("ERROR IOException: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("Error al guardar la imagen: " + e.getMessage());
         } catch (Exception e) {
+            System.out.println("ERROR Exception: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body("Error al enviar imagen: " + e.getMessage());
         }
     }

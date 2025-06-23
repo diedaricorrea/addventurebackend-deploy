@@ -83,7 +83,7 @@
                 
                 <div class="row g-4">
                     <div th:each="grupo : ${gruposCerrados}" class="col-12 col-md-6 col-lg-4">
-                        <div th:replace="~{fragments/grupo-card :: grupo-card(grupo=${grupo}, esCreador=${grupo.creador.idUsuario == #authentication.principal.idUsuario})}"></div>
+                        <div th:replace="~{fragments/grupo-card :: grupo-card(grupo=${grupo}, esCreador=${grupo.creador.idUsuario == usuarioId})}"></div>
                     </div>
                 </div>
             </div>
