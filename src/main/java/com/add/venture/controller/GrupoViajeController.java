@@ -73,7 +73,6 @@ public class GrupoViajeController {
             @RequestParam(required = false) String fechaInicio,
             @RequestParam(required = false) String fechaFin,
             @RequestParam(required = false) Long tipoViaje,
-            @RequestParam(required = false) String tipoGrupo,
             @RequestParam(required = false) String rangoEdad,
             @RequestParam(required = false) Boolean verificado,
             @RequestParam(required = false) String etiquetas,
@@ -348,7 +347,6 @@ public class GrupoViajeController {
         // Convertir entidad a DTO
         CrearGrupoViajeDTO dto = new CrearGrupoViajeDTO();
         dto.setNombreViaje(grupo.getNombreViaje());
-        dto.setTipoGrupo(grupo.getTipoGrupo());
         
         if (grupo.getViaje() != null) {
             dto.setDestinoPrincipal(grupo.getViaje().getDestinoPrincipal());

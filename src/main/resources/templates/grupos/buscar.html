@@ -150,24 +150,7 @@
                                     </div>
 
                                     <div class="col-md-6">
-                                        <div class="mb-3">
-                                            <label class="form-label">Género del grupo</label>
-                                            <div class="form-check mb-2">
-                                                <input class="form-check-input" type="radio" name="tipoGrupo" id="mixto"
-                                                    value="Mixto" checked>
-                                                <label class="form-check-label" for="mixto">Mixto</label>
-                                            </div>
-                                            <div class="form-check mb-2">
-                                                <input class="form-check-input" type="radio" name="tipoGrupo"
-                                                    id="solo-mujeres" value="Solo Mujeres">
-                                                <label class="form-check-label" for="solo-mujeres">Solo mujeres</label>
-                                            </div>
-                                            <div class="form-check">
-                                                <input class="form-check-input" type="radio" name="tipoGrupo"
-                                                    id="solo-hombres" value="Solo Hombres">
-                                                <label class="form-check-label" for="solo-hombres">Solo hombres</label>
-                                            </div>
-                                        </div>
+
 
                                         <div class="mb-3">
                                             <label class="form-label">Rango de edad</label>
@@ -332,14 +315,7 @@
                                         th:text="${etiqueta.nombreEtiqueta}">Etiqueta</span>
                                 </div>
 
-                                <!-- Tipo de grupo (solo mujeres, solo hombres) -->
-                                <div class="d-flex flex-wrap gap-1 mb-3"
-                                    th:if="${grupo.tipoGrupo != null && grupo.tipoGrupo != 'Mixto'}">
-                                    <span class="badge bg-purple-soft text-purple"
-                                        th:if="${grupo.tipoGrupo == 'Solo Mujeres'}">Solo mujeres</span>
-                                    <span class="badge bg-blue-soft text-blue"
-                                        th:if="${grupo.tipoGrupo == 'Solo Hombres'}">Solo hombres</span>
-                                </div>
+
 
                                 <a th:href="@{/grupos/{id}(id=${grupo.idGrupo})}" class="btn btn-primary w-100">
                                     Ver detalles <i class="bi bi-chevron-right ms-1"></i>
@@ -384,6 +360,9 @@
 
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Script para manejar las etiquetas -->
     <script>
@@ -449,6 +428,22 @@
                     updateHiddenField();
                 }
             });
+
+            // Mostrar mensaje de éxito si existe
+            const urlParams = new URLSearchParams(window.location.search);
+            const mensaje = urlParams.get('mensaje');
+            const tipoMensaje = urlParams.get('tipoMensaje');
+            
+            if (mensaje && tipoMensaje === 'success') {
+                Swal.fire({
+                    icon: 'success',
+                    title: '¡Éxito!',
+                    text: mensaje,
+                    confirmButtonText: 'Genial',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+            }
         });
     </script>
 </body>

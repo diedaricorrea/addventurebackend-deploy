@@ -87,7 +87,6 @@ public class GrupoViajeServiceImpl implements IGrupoViajeService {
         // Crear el grupo de viaje
         GrupoViaje grupo = new GrupoViaje();
         grupo.setNombreViaje(dto.getNombreViaje());
-        grupo.setTipoGrupo(dto.getTipoGrupo());
         grupo.setFechaCreacion(LocalDateTime.now());
         grupo.setEstado("activo");
         grupo.setMaxParticipantes(dto.getMaxParticipantes());
@@ -179,7 +178,6 @@ public class GrupoViajeServiceImpl implements IGrupoViajeService {
             LocalDate fechaInicio,
             LocalDate fechaFin,
             Long idTipoViaje,
-            String tipoGrupo,
             String rangoEdad,
             Boolean verificado,
             List<String> etiquetas,
@@ -235,7 +233,6 @@ public class GrupoViajeServiceImpl implements IGrupoViajeService {
 
         // Actualizar campos del grupo
         grupo.setNombreViaje(dto.getNombreViaje());
-        grupo.setTipoGrupo(dto.getTipoGrupo());
         // No se actualiza fechaCreacion ni estado salvo que quieras hacerlo
 
         // Actualizar etiquetas

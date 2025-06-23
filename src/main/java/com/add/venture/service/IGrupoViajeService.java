@@ -40,7 +40,6 @@ public interface IGrupoViajeService {
      * @param fechaInicio fecha de inicio del viaje
      * @param fechaFin fecha de fin del viaje
      * @param idTipoViaje ID del tipo de viaje
-     * @param tipoGrupo tipo de grupo (Mixto, Solo Mujeres, Solo Hombres)
      * @param rangoEdad rango de edad de los participantes
      * @param verificado si el grupo está verificado
      * @param etiquetas lista de etiquetas separadas por comas
@@ -52,7 +51,6 @@ public interface IGrupoViajeService {
             LocalDate fechaInicio,
             LocalDate fechaFin,
             Long idTipoViaje,
-            String tipoGrupo,
             String rangoEdad,
             Boolean verificado,
             List<String> etiquetas,

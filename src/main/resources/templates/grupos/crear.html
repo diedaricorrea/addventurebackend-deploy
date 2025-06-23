@@ -11,6 +11,9 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" th:href="@{/css/styles.css}">
+    
+    <!-- SweetAlert2 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
 </head>
 
 <body>
@@ -90,14 +93,6 @@
                                             El destino principal es obligatorio.
                                         </div>
                                     </div>
-                                    <div class="col-md-6">
-                                        <label for="idTipoViaje" class="form-label fw-medium">Tipo de viaje</label>
-                                        <select class="form-select" id="idTipoViaje" th:field="*{idTipoViaje}">
-                                            <option value="" selected>Selecciona un tipo</option>
-                                            <option th:each="tipo : ${tiposViaje}" th:value="${tipo.idTipo}"
-                                                th:text="${tipo.nombreTipo}"></option>
-                                        </select>
-                                    </div>
                                 </div>
                                 <div class="row mb-3">
                                     <div class="col-md-6 mb-3 mb-md-0">
@@ -123,17 +118,23 @@
                                 </div>
                                 <div class="mb-3">
                                     <label for="participantes" class="form-label fw-medium">
-                                        <i class="bi bi-people me-1"></i> Número máximo de participantes
+                                        <i class="bi bi-people me-1"></i> Número máximo de participantes *
                                     </label>
-                                    <select class="form-select" id="participantes" th:field="*{maxParticipantes}">
+                                    <select class="form-select" id="participantes" th:field="*{maxParticipantes}" required>
                                         <option value="">Selecciona</option>
+                                        <option value="2">2 personas</option>
                                         <option value="4">4 personas</option>
                                         <option value="6">6 personas</option>
                                         <option value="8">8 personas</option>
                                         <option value="10">10 personas</option>
                                         <option value="12">12 personas</option>
                                         <option value="15">15 personas</option>
+                                        <option value="20">20 personas</option>
                                     </select>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('maxParticipantes')}"
+                                        th:errors="*{maxParticipantes}">
+                                        El número de participantes es obligatorio.
+                                    </div>
                                 </div>
                                 <div class="mb-3">
                                     <label for="rango-edad" class="form-label fw-medium">Rango de edad de los
@@ -163,27 +164,23 @@
                                     </small>
                                 </div>
 
-                                <div class="mb-3">
-                                    <label for="tipoGrupo" class="form-label fw-medium">Tipo de grupo *</label>
-                                    <select class="form-select" id="tipoGrupo" th:field="*{tipoGrupo}" required>
-                                        <option value="" selected>Selecciona una opción</option>
-                                        <option value="Mixto">Mixto (todos bienvenidos)</option>
-                                        <option value="Solo Mujeres">Solo mujeres</option>
-                                        <option value="Solo Hombres">Solo hombres</option>
-                                    </select>
-                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('tipoGrupo')}"
-                                        th:errors="*{tipoGrupo}">
-                                        El tipo de grupo es obligatorio.
-                                    </div>
-                                </div>
+
 
                                 <div class="mb-3">
-                                    <label for="etiquetas" class="form-label fw-medium">Etiquetas (hashtags)</label>
+                                    <label for="etiquetas" class="form-label fw-medium">Etiquetas (hashtags) *</label>
                                     <input type="text" class="form-control mb-2" id="etiquetas" name="etiquetasInput"
-                                        placeholder="Añade etiquetas separadas por comas (ej: trekking, playa, aventura)">
+                                        placeholder="Añade etiquetas presionando Enter (ej: trekking, playa, aventura)">
                                     <input type="hidden" th:field="*{etiquetas}" id="etiquetasHidden">
-                                    <div id="tags-container" class="d-flex flex-wrap gap-2">
+                                    <div id="tags-container" class="d-flex flex-wrap gap-2 mb-2">
                                         <!-- Las etiquetas se mostrarán aquí dinámicamente -->
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Agrega al menos una etiqueta. Máximo 10 etiquetas de 20 caracteres cada una.
+                                    </small>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('etiquetas')}"
+                                        th:errors="*{etiquetas}">
+                                        Las etiquetas son obligatorias.
                                     </div>
                                 </div>
 
@@ -203,9 +200,17 @@
                                     <label for="imagenDestacada" class="form-label fw-medium">
                                         <i class="bi bi-upload me-1"></i> Imagen destacada (URL)
                                     </label>
-                                    <input type="text" class="form-control" id="imagenDestacada"
+                                    <input type="url" class="form-control" id="imagenDestacada"
                                         th:field="*{imagenDestacada}"
-                                        placeholder="Ingresa la URL de una imagen para tu grupo">
+                                        placeholder="https://ejemplo.com/imagen.jpg" pattern="https?://.+">
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle me-1"></i>
+                                        Opcional. Debe ser una URL válida que comience con http:// o https://
+                                    </small>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('imagenDestacada')}"
+                                        th:errors="*{imagenDestacada}">
+                                        La URL de la imagen no es válida.
+                                    </div>
                                 </div>
 
                                 <div class="d-flex justify-content-end">
@@ -317,6 +322,9 @@
 
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- SweetAlert2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Script para la creación de grupos -->
     <script th:src="@{/js/crear-grupo.js}"></script>

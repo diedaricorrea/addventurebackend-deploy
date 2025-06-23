@@ -39,9 +39,6 @@ public class GrupoViaje {
     @Column(name = "nombre_viaje", length = 100)
     private String nombreViaje;
 
-    @Column(name = "tipo_grupo", length = 50)
-    private String tipoGrupo;
-
     @Column(name = "fecha_creacion")
     private LocalDateTime fechaCreacion = LocalDateTime.now();
 

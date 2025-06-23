@@ -50,7 +50,6 @@ public class PerfilController {
     }
 
     @PostMapping("/configuracion")
-
     public String actualizarConfiguracion(
             @ModelAttribute("usuario") PerfilUsuarioDTO perfilDto,
             @RequestParam(value = "imagenPerfil", required = false) MultipartFile imagenPerfil,

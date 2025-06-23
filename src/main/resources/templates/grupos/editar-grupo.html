@@ -120,19 +120,7 @@
                                         </div>
                                     </div>
 
-                                    <div class="mb-3">
-                                        <label for="tipoGrupo" class="form-label fw-medium">Tipo de grupo *</label>
-                                        <select class="form-select" id="tipoGrupo" th:field="*{tipoGrupo}" required>
-                                            <option value="">Selecciona una opción</option>
-                                            <option value="Mixto">Mixto (todos bienvenidos)</option>
-                                            <option value="Solo Mujeres">Solo mujeres</option>
-                                            <option value="Solo Hombres">Solo hombres</option>
-                                        </select>
-                                        <div class="invalid-feedback" th:if="${#fields.hasErrors('tipoGrupo')}"
-                                            th:errors="*{tipoGrupo}">
-                                            El tipo de grupo es obligatorio.
-                                        </div>
-                                    </div>
+
 
                                     <div class="mb-3">
                                         <label for="descripcion" class="form-label fw-medium">Descripción del viaje

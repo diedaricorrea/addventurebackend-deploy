@@ -138,14 +138,7 @@
                                     th:text="${etiqueta.nombreEtiqueta}">Etiqueta</span>
                             </div>
 
-                            <!-- Tipo de grupo (solo mujeres, solo hombres) -->
-                            <div class="d-flex flex-wrap gap-1 mb-3"
-                                th:if="${grupo.tipoGrupo != null && grupo.tipoGrupo != 'Mixto'}">
-                                <span class="badge bg-purple-soft text-purple"
-                                    th:if="${grupo.tipoGrupo == 'Solo Mujeres'}">Solo mujeres</span>
-                                <span class="badge bg-blue-soft text-blue" th:if="${grupo.tipoGrupo == 'Solo Hombres'}">Solo
-                                    hombres</span>
-                            </div>
+
 
                             <div class="d-flex justify-content-between align-items-center mt-3">
                                 <div class="btn-group">
