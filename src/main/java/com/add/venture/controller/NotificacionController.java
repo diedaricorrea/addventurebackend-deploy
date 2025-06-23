@@ -121,6 +121,28 @@ public class NotificacionController {
         }
     }
 
+    @PostMapping("/limpiar-todas")
+    @ResponseBody
+    public ResponseEntity<String> limpiarTodasLasNotificaciones() {
+        try {
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
+                String email = auth.getName();
+                Optional<Usuario> usuarioOpt = usuarioRepository.findByEmail(email);
+                if (usuarioOpt.isEmpty()) {
+                    return ResponseEntity.badRequest().body("Usuario no encontrado");
+                }
+                Usuario usuario = usuarioOpt.get();
+
+                notificacionService.eliminarTodasLasNotificaciones(usuario);
+                return ResponseEntity.ok("Todas las notificaciones han sido eliminadas");
+            }
+            return ResponseEntity.badRequest().body("Usuario no autenticado");
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body("Error al eliminar las notificaciones");
+        }
+    }
+
     @PostMapping("/responder-solicitud")
     public String responderSolicitudUnion(
             @RequestParam("idNotificacion") Long idNotificacion,

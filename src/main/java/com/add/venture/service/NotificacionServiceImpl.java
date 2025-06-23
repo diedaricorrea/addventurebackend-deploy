@@ -161,4 +161,12 @@ public class NotificacionServiceImpl implements INotificacionService {
         
         notificacionRepository.saveAll(notificacionesNoLeidas);
     }
+
+    @Override
+    public void eliminarTodasLasNotificaciones(Usuario usuario) {
+        List<Notificacion> todasLasNotificaciones = notificacionRepository
+                .findByUsuarioOrderByFechaDesc(usuario);
+        
+        notificacionRepository.deleteAll(todasLasNotificaciones);
+    }
 } 

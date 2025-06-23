@@ -84,4 +84,10 @@ public interface INotificacionService {
      * @param usuario el usuario
      */
     void marcarTodasComoLeidas(Usuario usuario);
+
+    /**
+     * Elimina todas las notificaciones de un usuario
+     * @param usuario Usuario cuyas notificaciones se eliminarán
+     */
+    void eliminarTodasLasNotificaciones(Usuario usuario);
 } 

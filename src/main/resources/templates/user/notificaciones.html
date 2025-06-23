@@ -55,9 +55,14 @@
                     <h1 class="h2 mb-0">
                         <i class="bi bi-bell me-2"></i>Notificaciones
                     </h1>
-                    <button type="button" class="btn btn-outline-primary" id="marcarTodasLeidas">
-                        <i class="bi bi-check-all me-1"></i>Marcar todas como leídas
-                    </button>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-outline-primary" id="marcarTodasLeidas">
+                            <i class="bi bi-check-all me-1"></i>Marcar todas como leídas
+                        </button>
+                        <button type="button" class="btn btn-outline-danger" id="limpiarTodasNotificaciones">
+                            <i class="bi bi-trash me-1"></i>Limpiar todas
+                        </button>
+                    </div>
                 </div>
 
                 <!-- Mensaje de error si existe -->
@@ -121,10 +126,10 @@
                                     </div>
 
                                     <!-- Acciones para solicitudes de unión -->
-                                    <div th:if="${notificacion.tipo == 'SOLICITUD_UNION' and !notificacion.leido}">
+                                    <div th:if="${notificacion.tipo == 'SOLICITUD_UNION'}">
                                         
-                                        <!-- Solo mostrar acciones si tenemos datos completos -->
-                                        <div th:if="${notificacion.grupo != null and notificacion.solicitante != null}">
+                                        <!-- Solo mostrar acciones si tenemos datos completos y no está leída -->
+                                        <div th:if="${notificacion.grupo != null and notificacion.solicitante != null and !notificacion.leido}">
                                             <div class="notification-actions">
                                                 <form th:action="@{/notificaciones/responder-solicitud}" method="post" style="display: inline;">
                                                     <input type="hidden" name="idNotificacion" th:value="${notificacion.idNotificacion}">
@@ -152,6 +157,13 @@
                                                     <i class="bi bi-eye me-1"></i>Ver perfil
                                                 </button>
                                             </div>
+                                        </div>
+                                        
+                                        <!-- Mensaje cuando la solicitud ya fue procesada -->
+                                        <div th:if="${notificacion.leido}" class="mt-2">
+                                            <small class="text-muted">
+                                                <i class="bi bi-info-circle me-1"></i>Esta solicitud ya fue procesada
+                                            </small>
                                         </div>
                                         
                                         <!-- Mensaje de error si faltan datos -->
@@ -272,6 +284,26 @@
                 });
             });
 
+            // Limpiar todas las notificaciones
+            document.getElementById('limpiarTodasNotificaciones').addEventListener('click', function() {
+                if (confirm('¿Estás seguro de que quieres eliminar todas las notificaciones? Esta acción no se puede deshacer.')) {
+                    fetch('/notificaciones/limpiar-todas', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    })
+                    .then(response => response.text())
+                    .then(data => {
+                        location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al eliminar las notificaciones');
+                    });
+                }
+            });
+
             // Volver a intentar unirse al grupo
             document.querySelectorAll('.volver-intentar-btn').forEach(button => {
                 button.addEventListener('click', function() {
@@ -304,75 +336,76 @@
                 });
             });
             
-            // Configurar WebSocket para notificaciones en tiempo real
-            function setupWebSocketNotifications() {
-                // Obtener el ID del usuario desde el modelo Thymeleaf
-                const usuarioIdElement = document.querySelector('[data-usuario-id]');
-                if (!usuarioIdElement) return;
+        });
+
+        // Configurar WebSocket para notificaciones en tiempo real
+        function setupWebSocketNotifications() {
+            // Obtener el ID del usuario desde el modelo Thymeleaf
+            const usuarioIdElement = document.querySelector('[data-usuario-id]');
+            if (!usuarioIdElement) return;
+            
+            const usuarioId = usuarioIdElement.getAttribute('data-usuario-id');
+            if (!usuarioId || usuarioId === '') return;
+            
+            const socket = new SockJS('/ws');
+            const stompClient = Stomp.over(socket);
+            
+            stompClient.connect({}, function (frame) {
+                console.log('Connected to notifications WebSocket: ' + frame);
                 
-                const usuarioId = usuarioIdElement.getAttribute('data-usuario-id');
-                if (!usuarioId || usuarioId === '') return;
-                
-                const socket = new SockJS('/ws');
-                const stompClient = Stomp.over(socket);
-                
-                stompClient.connect({}, function (frame) {
-                    console.log('Connected to notifications WebSocket: ' + frame);
+                // Suscribirse al canal de notificaciones del usuario
+                stompClient.subscribe('/queue/notificaciones/' + usuarioId, function (message) {
+                    const nuevaNotificacion = JSON.parse(message.body);
                     
-                    // Suscribirse al canal de notificaciones del usuario
-                    stompClient.subscribe('/queue/notificaciones/' + usuarioId, function (message) {
-                        const nuevaNotificacion = JSON.parse(message.body);
-                        
-                        // Mostrar notificación visual
-                        mostrarNotificacionTemporal(nuevaNotificacion);
-                        
-                        // Actualizar la página de notificaciones si está activa
-                        if (window.location.pathname === '/notificaciones') {
-                            setTimeout(() => {
-                                location.reload();
-                            }, 2000); // Esperar 2 segundos para que el usuario vea la notificación
-                        }
-                    });
-                }, function (error) {
-                    console.log('WebSocket notifications connection error: ' + error);
+                    // Mostrar notificación visual
+                    mostrarNotificacionTemporal(nuevaNotificacion);
+                    
+                    // Actualizar la página de notificaciones si está activa
+                    if (window.location.pathname === '/notificaciones') {
+                        setTimeout(() => {
+                            location.reload();
+                        }, 2000); // Esperar 2 segundos para que el usuario vea la notificación
+                    }
                 });
+            }, function (error) {
+                console.log('WebSocket notifications connection error: ' + error);
+            });
+        }
+        
+        // Mostrar notificación temporal en la parte superior
+        function mostrarNotificacionTemporal(notificacion) {
+            const notificationDiv = document.createElement('div');
+            notificationDiv.className = 'alert alert-info alert-dismissible fade show position-fixed';
+            notificationDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+            
+            let iconClass = 'bi-bell';
+            let bgClass = 'alert-info';
+            
+            if (notificacion.tipo === 'SOLICITUD_ACEPTADA') {
+                iconClass = 'bi-check-circle';
+                bgClass = 'alert-success';
+            } else if (notificacion.tipo === 'SOLICITUD_RECHAZADA') {
+                iconClass = 'bi-x-circle';
+                bgClass = 'alert-warning';
             }
             
-            // Mostrar notificación temporal en la parte superior
-            function mostrarNotificacionTemporal(notificacion) {
-                const notificationDiv = document.createElement('div');
-                notificationDiv.className = 'alert alert-info alert-dismissible fade show position-fixed';
-                notificationDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
-                
-                let iconClass = 'bi-bell';
-                let bgClass = 'alert-info';
-                
-                if (notificacion.tipo === 'SOLICITUD_ACEPTADA') {
-                    iconClass = 'bi-check-circle';
-                    bgClass = 'alert-success';
-                } else if (notificacion.tipo === 'SOLICITUD_RECHAZADA') {
-                    iconClass = 'bi-x-circle';
-                    bgClass = 'alert-warning';
+            notificationDiv.className = `alert ${bgClass} alert-dismissible fade show position-fixed`;
+            notificationDiv.innerHTML = `
+                <i class="bi ${iconClass} me-2"></i>
+                <strong>Nueva notificación:</strong>
+                <br>${notificacion.contenido}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notificationDiv);
+            
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                if (notificationDiv.parentNode) {
+                    notificationDiv.remove();
                 }
-                
-                notificationDiv.className = `alert ${bgClass} alert-dismissible fade show position-fixed`;
-                notificationDiv.innerHTML = `
-                    <i class="bi ${iconClass} me-2"></i>
-                    <strong>Nueva notificación:</strong>
-                    <br>${notificacion.contenido}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                `;
-                
-                document.body.appendChild(notificationDiv);
-                
-                // Auto-remover después de 5 segundos
-                setTimeout(() => {
-                    if (notificationDiv.parentNode) {
-                        notificationDiv.remove();
-                    }
-                }, 5000);
-            }
-        });
+            }, 5000);
+        }
     </script>
 </body>
 
