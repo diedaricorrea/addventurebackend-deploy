@@ -32,11 +32,17 @@ public class UsuarioAutenticadoHelper {
                 && !authentication.getPrincipal().equals("anonymousUser")) {
 
             String correo = authentication.getName();
-            RegistroUsuarioDTO usuario = usuarioService.buscarPorEmail(correo);
+            RegistroUsuarioDTO usuarioDto = usuarioService.buscarPorEmail(correo);
 
-            if (usuario != null) {
-                model.addAttribute("iniciales", usuario.getIniciales());
-                model.addAttribute("username", usuario);
+            if (usuarioDto != null) {
+                model.addAttribute("iniciales", usuarioDto.getIniciales());
+                model.addAttribute("username", usuarioDto);
+
+                // También cargar el perfil completo para el navbar (que necesita imagenPerfil)
+                PerfilUsuarioDTO usuarioPerfil = usuarioService.buscarPerfilPorEmail(correo);
+                if (usuarioPerfil != null) {
+                    model.addAttribute("usuario", usuarioPerfil);
+                }
 
                 // Cargar número de notificaciones no leídas
                 try {

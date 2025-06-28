@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Perfil - AddVenture</title>
+    <title th:text="${esPerfilPropio != null && !esPerfilPropio} ? 'Perfil de ' + ${usuario.nombre} + ' - AddVenture' : 'Mi Perfil - AddVenture'">Mi Perfil - AddVenture</title>
     <!-- BLOQUE DE LINKS FRAGMENTS -->
     <th:block th:replace="~{fragments/head :: head-links}"></th:block>
     <!-- Custom CSS -->
@@ -15,6 +15,13 @@
 <body>
     <!-- Navbar -->
     <nav th:replace="~{fragments/navbar :: navbar}"></nav>
+
+    <!-- Botón Volver (solo para perfiles de otros usuarios) -->
+    <div th:if="${esPerfilPropio != null && !esPerfilPropio}" class="container mt-3">
+        <button onclick="history.back()" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-2"></i>Volver
+        </button>
+    </div>
 
     <!-- Portada Usuario -->
     <div class="position-relative cover-container">
@@ -49,7 +56,7 @@
                                 <p class="text-muted mb-0" th:text="${usuario.username}">@maria_viajera</p>
                                 <div class="d-flex align-items-center gap-2 small text-muted">
                                     <i class="bi bi-geo-alt"></i>
-                                    <span th:text="${usuario.ciudad} + ', ' + 'Perú'">Madrid, España</span>
+                                    <span th:text="${usuario.ciudad} + ', ' + ${usuario.pais}">Madrid, España</span>
                                 </div>
                                 <div class="d-flex align-items-center">
                                     <div class="stars-container">
@@ -136,33 +143,45 @@
                                     <h5 class="card-title mb-0">Sobre mí</h5>
                                 </div>
                                 <div class="card-body">
-                                    <p class="text-muted" th:text="${usuario.biografia}">Apasionada de los viajes y las
+                                    <!-- Biografía si existe -->
+                                    <p class="text-muted" th:if="${usuario.biografia != null && !usuario.biografia.trim().isEmpty()}" 
+                                       th:text="${usuario.biografia}">Apasionada de los viajes y las
                                         aventuras. Me encanta conocer
                                         nuevas culturas y personas. Siempre buscando mi próximo destino.</p>
+                                    
+                                    <!-- Mensaje cuando no hay biografía -->
+                                    <p class="text-muted fst-italic" th:if="${usuario.biografia == null || usuario.biografia.trim().isEmpty()}">
+                                        <span th:if="${esPerfilPropio == null || esPerfilPropio}">Aún no has agregado una descripción a tu perfil.</span>
+                                        <span th:if="${esPerfilPropio != null && !esPerfilPropio}">Este usuario no ha agregado una descripción a su perfil.</span>
+                                    </p>
 
                                     <div class="row mt-4 g-3">
-                                        <div class="col-md-6">
+                                        <!-- Email (solo mostrar si es perfil propio) -->
+                                        <div class="col-md-6" th:if="${esPerfilPropio == null || esPerfilPropio}">
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="bi bi-envelope text-muted"></i>
                                                 <span th:text="${usuario.email}">maria@example.com</span>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <!-- Teléfono (solo mostrar si es perfil propio) -->
+                                        <div class="col-md-6" th:if="${esPerfilPropio == null || esPerfilPropio}">
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="bi bi-telephone text-muted"></i>
                                                 <span th:text="${'+51 '+ usuario.telefono}">+34 612 345 678</span>
                                             </div>
                                         </div>
+                                        <!-- Ubicación (siempre mostrar) -->
                                         <div class="col-md-6">
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="bi bi-geo-alt text-muted"></i>
-                                                <span th:text="${usuario.ciudad} + ', ' + 'Perú'">Madrid, España</span>
+                                                <span th:text="${usuario.ciudad} + ', ' + ${usuario.pais}">Madrid, España</span>
                                             </div>
                                         </div>
-                                        <div class="col-md-6">
+                                        <!-- Edad (siempre mostrar si está disponible) -->
+                                        <div class="col-md-6" th:if="${usuario.edad != null}">
                                             <div class="d-flex align-items-center gap-2">
                                                 <i class="bi bi-calendar text-muted"></i>
-                                                <span th:text="${usuario.getEdad() + ' años'}">28 años</span>
+                                                <span th:text="${usuario.edad + ' años'}">28 años</span>
                                             </div>
                                         </div>
                                     </div>

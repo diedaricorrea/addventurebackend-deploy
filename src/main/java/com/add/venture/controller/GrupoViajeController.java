@@ -177,6 +177,13 @@ public class GrupoViajeController {
                 .findByGrupoAndEstadoSolicitud(grupo, EstadoSolicitud.ACEPTADO);
         model.addAttribute("participantesAceptadosList", participantesAceptadosList);
 
+        // Obtener rol descriptivo del creador si existe
+        Optional<ParticipanteGrupo> creadorParticipante = participanteGrupoRepository
+                .findByUsuarioAndGrupo(grupo.getCreador(), grupo);
+        if (creadorParticipante.isPresent() && creadorParticipante.get().getRolParticipante() != null) {
+            model.addAttribute("creadorRolDescriptivo", creadorParticipante.get().getRolParticipante());
+        }
+
         return "grupos/detalles";
     }
 
@@ -454,6 +461,100 @@ public class GrupoViajeController {
         mensajeGrupoRepository.save(mensaje);
 
         return "{\"success\": true}";
+    }
+
+    @PostMapping("/{id}/asignar-rol")
+    public String asignarRolDescriptivo(
+            @PathVariable("id") Long idGrupo,
+            @RequestParam("userId") Long userId,
+            @RequestParam("rolDescriptivo") String rolDescriptivo,
+            @RequestParam(value = "notasRol", required = false) String notasRol,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+            // Obtener el usuario autenticado
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth == null || !auth.isAuthenticated() || auth.getName().equals("anonymousUser")) {
+                redirectAttributes.addFlashAttribute("error", "Usuario no autenticado");
+                return "redirect:/grupos/" + idGrupo;
+            }
+
+            String email = auth.getName();
+            Usuario usuarioAutenticado = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            // Obtener el grupo
+            GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
+                    .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+
+            // Verificar permisos para asignar roles
+            if (!permisosService.puedeAsignarRoles(usuarioAutenticado, grupo)) {
+                redirectAttributes.addFlashAttribute("error", "No tienes permisos para asignar roles en este grupo");
+                return "redirect:/grupos/" + idGrupo;
+            }
+
+            // Obtener el usuario al que se le asignará el rol
+            Usuario usuarioAAsignar = usuarioRepository.findById(userId)
+                    .orElseThrow(() -> new RuntimeException("Usuario a asignar rol no encontrado"));
+
+            // Verificar que el usuario sea participante del grupo
+            Optional<ParticipanteGrupo> participanteOpt = participanteGrupoRepository
+                    .findByUsuarioAndGrupo(usuarioAAsignar, grupo);
+            
+            // Si no es participante pero es el creador, crear la entrada de participante
+            if (participanteOpt.isEmpty()) {
+                if (grupo.getCreador().equals(usuarioAAsignar)) {
+                    // Crear entrada para el creador
+                    ParticipanteGrupo participanteCreador = ParticipanteGrupo.builder()
+                            .usuario(usuarioAAsignar)
+                            .grupo(grupo)
+                            .rolParticipante(rolDescriptivo)
+                            .estadoSolicitud(EstadoSolicitud.ACEPTADO)
+                            .fechaUnion(LocalDateTime.now())
+                            .build();
+                    participanteGrupoRepository.save(participanteCreador);
+                } else {
+                    redirectAttributes.addFlashAttribute("error", "El usuario no es participante de este grupo");
+                    return "redirect:/grupos/" + idGrupo;
+                }
+            } else {
+                // Actualizar el rol del participante existente
+                ParticipanteGrupo participante = participanteOpt.get();
+                participante.setRolParticipante(rolDescriptivo);
+                participanteGrupoRepository.save(participante);
+            }
+
+            // Mapear emojis y nombres bonitos para el mensaje
+            String nombreRolBonito = obtenerNombreRolBonito(rolDescriptivo);
+            
+            redirectAttributes.addFlashAttribute("mensaje", 
+                "Rol '" + nombreRolBonito + "' asignado exitosamente a " + 
+                usuarioAAsignar.getNombre() + " " + usuarioAAsignar.getApellidos());
+            
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("error", "Error al asignar rol: " + e.getMessage());
+        }
+
+        return "redirect:/grupos/" + idGrupo;
+    }
+
+    public String obtenerNombreRolBonito(String rolDescriptivo) {
+        switch (rolDescriptivo) {
+            case "GUÍA": return "🗺️ Guía del viaje";
+            case "COORDINADOR": return "📋 Coordinador";
+            case "TESORERO": return "💰 Tesorero/Finanzas";
+            case "FOTOGRAFO": return "📸 Fotógrafo oficial";
+            case "COCINERO": return "👨‍🍳 Cocinero/Chef";
+            case "CONDUCTOR": return "🚗 Conductor";
+            case "NAVEGADOR": return "🧭 Navegador";
+            case "ANIMADOR": return "🎉 Animador";
+            case "MEDICO": return "🏥 Encargado de primeros auxilios";
+            case "TRADUCTOR": return "🗣️ Traductor";
+            case "LUGAREÑO": return "🏠 Conoce el lugar";
+            case "PLANIFICADOR": return "📅 Planificador de actividades";
+            case "MIEMBRO": return "👤 Miembro";
+            default: return rolDescriptivo;
+        }
     }
 
     // Clase para recibir el mensaje

@@ -39,6 +39,11 @@ public interface IPermisosService {
      */
     boolean puedeGestionarUsuario(Usuario gestor, Usuario objetivo, GrupoViaje grupo);
     
+    /**
+     * Verifica si un usuario puede asignar roles descriptivos en un grupo
+     */
+    boolean puedeAsignarRoles(Usuario usuario, GrupoViaje grupo);
+    
     // ===== GESTIÓN DE ROLES =====
     
     /**

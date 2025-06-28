@@ -209,4 +209,16 @@ public class PermisosServiceImpl implements IPermisosService {
         
         return rolRepository.findRolesConNivelMenorOIgual(rolUsuario.getNivelJerarquia() + 1);
     }
+
+    @Override
+    public boolean puedeAsignarRoles(Usuario usuario, GrupoViaje grupo) {
+        // El creador siempre puede asignar roles descriptivos
+        if (esCreadorDelGrupo(usuario, grupo)) {
+            return true;
+        }
+        
+        // Verificar si tiene permisos específicos para asignar roles
+        return usuarioTienePermiso(usuario, grupo, "ASIGNAR_ROLES") ||
+               usuarioTienePermiso(usuario, grupo, "GESTIONAR_MIEMBROS");
+    }
 } 

@@ -117,6 +117,26 @@
                                                     th:text="${grupo.creador.nombre + ' ' + grupo.creador.apellidos}">
                                                     Nombre Organizador</div>
                                                 <div class="organizer-label">Organizador</div>
+                                                <!-- Mostrar rol descriptivo del creador si existe -->
+                                                <div th:if="${creadorRolDescriptivo != null && creadorRolDescriptivo != 'MIEMBRO'}" 
+                                                     class="mt-1">
+                                                    <span class="badge bg-warning text-dark small" 
+                                                          th:text="${creadorRolDescriptivo == 'GUÍA' ? '🗺️ Guía' : 
+                                                                    creadorRolDescriptivo == 'COORDINADOR' ? '📋 Coordinador' : 
+                                                                    creadorRolDescriptivo == 'TESORERO' ? '💰 Tesorero' : 
+                                                                    creadorRolDescriptivo == 'FOTOGRAFO' ? '📸 Fotógrafo' : 
+                                                                    creadorRolDescriptivo == 'COCINERO' ? '👨‍🍳 Chef' : 
+                                                                    creadorRolDescriptivo == 'CONDUCTOR' ? '🚗 Conductor' : 
+                                                                    creadorRolDescriptivo == 'NAVEGADOR' ? '🧭 Navegador' : 
+                                                                    creadorRolDescriptivo == 'ANIMADOR' ? '🎉 Animador' : 
+                                                                    creadorRolDescriptivo == 'MEDICO' ? '🏥 Primeros auxilios' : 
+                                                                    creadorRolDescriptivo == 'TRADUCTOR' ? '🗣️ Traductor' : 
+                                                                    creadorRolDescriptivo == 'LUGAREÑO' ? '🏠 Conoce el lugar' : 
+                                                                    creadorRolDescriptivo == 'PLANIFICADOR' ? '📅 Planificador' : 
+                                                                    creadorRolDescriptivo}">
+                                                        👤 Rol
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
 
@@ -136,6 +156,26 @@
                                                 <div class="fw-medium"
                                                     th:text="${participante.usuario.nombre + ' ' + participante.usuario.apellidos}">
                                                     Nombre Participante</div>
+                                                <!-- Mostrar rol descriptivo si existe -->
+                                                <div th:if="${participante.rolParticipante != null && participante.rolParticipante != 'MIEMBRO'}" 
+                                                     class="mt-1">
+                                                    <span class="badge bg-info text-white small" 
+                                                          th:text="${participante.rolParticipante == 'GUÍA' ? '🗺️ Guía' : 
+                                                                    participante.rolParticipante == 'COORDINADOR' ? '📋 Coordinador' : 
+                                                                    participante.rolParticipante == 'TESORERO' ? '💰 Tesorero' : 
+                                                                    participante.rolParticipante == 'FOTOGRAFO' ? '📸 Fotógrafo' : 
+                                                                    participante.rolParticipante == 'COCINERO' ? '👨‍🍳 Chef' : 
+                                                                    participante.rolParticipante == 'CONDUCTOR' ? '🚗 Conductor' : 
+                                                                    participante.rolParticipante == 'NAVEGADOR' ? '🧭 Navegador' : 
+                                                                    participante.rolParticipante == 'ANIMADOR' ? '🎉 Animador' : 
+                                                                    participante.rolParticipante == 'MEDICO' ? '🏥 Primeros auxilios' : 
+                                                                    participante.rolParticipante == 'TRADUCTOR' ? '🗣️ Traductor' : 
+                                                                    participante.rolParticipante == 'LUGAREÑO' ? '🏠 Conoce el lugar' : 
+                                                                    participante.rolParticipante == 'PLANIFICADOR' ? '📅 Planificador' : 
+                                                                    participante.rolParticipante}">
+                                                        👤 Rol
+                                                    </span>
+                                                </div>
 
                                                 <!-- Dropdown para gestión de miembros -->
                                                 <div class="dropdown position-absolute top-0 end-0 me-2 mt-2"
@@ -478,6 +518,72 @@
                 <div class="modal-body">
                     <p>Ahora eres parte del grupo <strong th:text="${grupo.nombreViaje}">Nombre del Grupo</strong>.
                         ¡Disfruta tu viaje!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Role Modal -->
+    <div class="modal fade" id="assignRoleModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title text-primary">
+                        <i class="bi bi-person-gear me-2"></i>Asignar rol en el viaje
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Asignar un rol descriptivo a <strong id="roleAssignMemberName">Nombre del miembro</strong></p>
+                    
+                    <div class="alert alert-info d-flex align-items-start mb-3">
+                        <i class="bi bi-info-circle me-2 mt-1"></i>
+                        <span>Los roles son solo descriptivos para organizar mejor el viaje. No afectan los permisos del sistema.</span>
+                    </div>
+
+                    <form id="assignRoleForm" th:action="@{/grupos/{id}/asignar-rol(id=${grupo.idGrupo})}" method="post">
+                        <input type="hidden" id="roleAssignUserId" name="userId" value="">
+
+                        <div class="mb-3">
+                            <label for="roleSelect" class="form-label fw-bold">Seleccionar rol</label>
+                            <select class="form-select" id="roleSelect" name="rolDescriptivo" required>
+                                <option value="">-- Seleccionar rol --</option>
+                                <optgroup label="Roles de organización">
+                                    <option value="GUÍA">🗺️ Guía del viaje</option>
+                                    <option value="COORDINADOR">📋 Coordinador</option>
+                                    <option value="TESORERO">💰 Tesorero/Finanzas</option>
+                                    <option value="FOTOGRAFO">📸 Fotógrafo oficial</option>
+                                </optgroup>
+                                <optgroup label="Roles de actividades">
+                                    <option value="COCINERO">👨‍🍳 Cocinero/Chef</option>
+                                    <option value="CONDUCTOR">🚗 Conductor</option>
+                                    <option value="NAVEGADOR">🧭 Navegador</option>
+                                    <option value="ANIMADOR">🎉 Animador</option>
+                                </optgroup>
+                                <optgroup label="Roles especiales">
+                                    <option value="MEDICO">🏥 Encargado de primeros auxilios</option>
+                                    <option value="TRADUCTOR">🗣️ Traductor</option>
+                                    <option value="LUGAREÑO">🏠 Conoce el lugar</option>
+                                    <option value="PLANIFICADOR">📅 Planificador de actividades</option>
+                                </optgroup>
+                                <optgroup label="Sin rol específico">
+                                    <option value="MIEMBRO">👤 Miembro (sin rol específico)</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="roleNotes" class="form-label">Notas adicionales (opcional)</label>
+                            <textarea class="form-control" id="roleNotes" name="notasRol" rows="2"
+                                placeholder="Añade información adicional sobre el rol o responsabilidades..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="confirmAssignRoleBtn">
+                        <i class="bi bi-check-lg me-2"></i>Asignar rol
+                    </button>
                 </div>
             </div>
         </div>
@@ -958,6 +1064,33 @@
             if (confirmLeaveBtn) {
                 confirmLeaveBtn.addEventListener('click', function () {
                     document.getElementById('leaveGroupForm').submit();
+                });
+            }
+
+            // Manejo del modal de asignación de rol
+            const assignRoleModal = document.getElementById('assignRoleModal');
+            if (assignRoleModal) {
+                assignRoleModal.addEventListener('show.bs.modal', function (event) {
+                    const button = event.relatedTarget;
+                    const userId = button.getAttribute('data-user-id');
+                    const userName = button.getAttribute('data-user-name');
+
+                    document.getElementById('roleAssignUserId').value = userId;
+                    document.getElementById('roleAssignMemberName').textContent = userName;
+                    
+                    // Limpiar formulario
+                    document.getElementById('roleSelect').value = '';
+                    document.getElementById('roleNotes').value = '';
+                });
+
+                // Botón para confirmar asignación de rol
+                document.getElementById('confirmAssignRoleBtn').addEventListener('click', function () {
+                    const roleSelect = document.getElementById('roleSelect');
+                    if (!roleSelect.value) {
+                        alert('Por favor selecciona un rol');
+                        return;
+                    }
+                    document.getElementById('assignRoleForm').submit();
                 });
             }
         }
