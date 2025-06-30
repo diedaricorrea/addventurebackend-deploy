@@ -9,6 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -34,7 +35,7 @@ public class Resena {
     @Column(columnDefinition = "INT CHECK (calificacion BETWEEN 1 AND 5)")
     private Integer calificacion;
 
-    private LocalDateTime fecha = LocalDateTime.now();
+    private LocalDateTime fecha;
 
     // Relaciones
     @ManyToOne
@@ -48,4 +49,11 @@ public class Resena {
     @ManyToOne
     @JoinColumn(name = "id_grupo")
     private GrupoViaje grupo;
+    
+    @PrePersist
+    protected void onCreate() {
+        if (fecha == null) {
+            fecha = LocalDateTime.now();
+        }
+    }
 }

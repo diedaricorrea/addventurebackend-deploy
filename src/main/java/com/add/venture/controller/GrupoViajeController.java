@@ -667,9 +667,10 @@ public class GrupoViajeController {
         LocalDateTime ahora = LocalDateTime.now();
         Duration tiempoDesdeCreacion = Duration.between(grupo.getFechaCreacion(), ahora);
         if (tiempoDesdeCreacion.toHours() >= 24) {
-            throw new AccessDeniedException("No se puede editar el grupo después de 24 horas de su creación. " +
-                    "Han transcurrido " + tiempoDesdeCreacion.toHours() + " horas. " +
-                    "Para hacer cambios importantes, puedes usar el chat del grupo o eliminar y recrear el grupo.");
+            // Redireccionar a la página de edición bloqueada con información del error
+            model.addAttribute("grupo", grupo);
+            model.addAttribute("horasTranscurridas", tiempoDesdeCreacion.toHours());
+            return "grupos/editar-grupo-bloqueado";
         }
 
         // Convertir entidad a DTO completo
@@ -761,8 +762,12 @@ public class GrupoViajeController {
             LocalDateTime ahora = LocalDateTime.now();
             Duration tiempoDesdeCreacion = Duration.between(grupo.getFechaCreacion(), ahora);
             if (tiempoDesdeCreacion.toHours() >= 24) {
-                throw new AccessDeniedException("No se puede editar el grupo después de 24 horas de su creación. " +
-                        "Han transcurrido " + tiempoDesdeCreacion.toHours() + " horas.");
+                // Redireccionar a la página de edición bloqueada con información del error
+                model.addAttribute("grupo", grupo);
+                model.addAttribute("horasTranscurridas", tiempoDesdeCreacion.toHours());
+                usuarioAutenticadoHelper.cargarDatosUsuarioParaNavbar(model);
+                usuarioAutenticadoHelper.cargarUsuarioParaPerfil(model);
+                return "grupos/editar-grupo-bloqueado";
             }
 
             // Actualizar el grupo usando el servicio

@@ -23,6 +23,7 @@ import com.add.venture.repository.RolRepository;
 import com.add.venture.repository.UsuarioRepository;
 import com.add.venture.repository.GrupoViajeRepository;
 import com.add.venture.repository.UsuarioRolGrupoRepository;
+import com.add.venture.service.ILogroService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Component
@@ -47,6 +48,9 @@ public class DataLoader implements CommandLineRunner {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+    
+    @Autowired
+    private ILogroService logroService;
 
     @Override
     public void run(String... args) throws Exception {
@@ -56,6 +60,7 @@ public class DataLoader implements CommandLineRunner {
         cargarRoles();
         cargarUsuariosDePrueba();
         verificarYCorregirRolesFaltantes();
+        inicializarLogros();
         
         logger.info("Carga de datos completada.");
     }
@@ -294,6 +299,18 @@ public class DataLoader implements CommandLineRunner {
             
         } catch (Exception e) {
             logger.error("⚠️ Error al verificar roles faltantes: {}", e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    
+    private void inicializarLogros() {
+        logger.info("🏆 Inicializando logros del sistema...");
+        
+        try {
+            logroService.inicializarLogrosBasicos();
+            logger.info("✅ Logros del sistema inicializados correctamente");
+        } catch (Exception e) {
+            logger.error("⚠️ Error al inicializar logros: {}", e.getMessage());
             e.printStackTrace();
         }
     }

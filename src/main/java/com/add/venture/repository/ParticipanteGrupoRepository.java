@@ -65,4 +65,13 @@ public interface ParticipanteGrupoRepository extends JpaRepository<ParticipanteG
      * @return lista de participaciones del usuario con el estado especificado
      */
     List<ParticipanteGrupo> findByUsuarioAndEstadoSolicitud(Usuario usuario, EstadoSolicitud estado);
+    
+    /**
+     * Busca participaciones de un usuario con estado específico ordenadas por fecha de unión descendente
+     * 
+     * @param usuario el usuario participante
+     * @param estadoSolicitud el estado de la solicitud
+     * @return lista de participaciones ordenadas por fecha
+     */
+    List<ParticipanteGrupo> findByUsuarioAndEstadoSolicitudOrderByFechaUnionDesc(Usuario usuario, EstadoSolicitud estadoSolicitud);
 }

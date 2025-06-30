@@ -104,6 +104,11 @@ public class ChatController {
             GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
                     .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
 
+            // Verificar que el grupo no esté cerrado
+            if ("cerrado".equals(grupo.getEstado()) || "concluido".equals(grupo.getEstado())) {
+                return ResponseEntity.badRequest().body("No se pueden enviar mensajes en un grupo cerrado o concluido");
+            }
+
             // Verificar que el usuario tiene permiso para enviar mensajes
             if (!permisosService.usuarioTienePermiso(usuario, grupo, "ENVIAR_MENSAJES")) {
                 return ResponseEntity.badRequest().body("No tienes permiso para enviar mensajes en este grupo");
@@ -161,6 +166,12 @@ public class ChatController {
                     .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
 
             System.out.println("Grupo encontrado: " + grupo.getNombreViaje());
+
+            // Verificar que el grupo no esté cerrado
+            if ("cerrado".equals(grupo.getEstado()) || "concluido".equals(grupo.getEstado())) {
+                System.out.println("ERROR: Grupo cerrado o concluido");
+                return ResponseEntity.badRequest().body("No se pueden enviar archivos en un grupo cerrado o concluido");
+            }
 
             // Verificar que el usuario tiene permiso para compartir archivos
             if (!permisosService.usuarioTienePermiso(usuario, grupo, "COMPARTIR_ARCHIVOS")) {

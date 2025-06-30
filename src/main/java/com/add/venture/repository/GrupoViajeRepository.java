@@ -47,6 +47,14 @@ public interface GrupoViajeRepository extends JpaRepository<GrupoViaje, Long> {
     List<GrupoViaje> findByCreador(Usuario creador);
     
     /**
+     * Busca grupos creados por un usuario ordenados por fecha de creación descendente
+     * 
+     * @param creador el usuario creador
+     * @return lista de grupos ordenados por fecha
+     */
+    List<GrupoViaje> findByCreadorOrderByFechaCreacionDesc(Usuario creador);
+    
+    /**
      * Busca todos los grupos por estado
      * 
      * @param estado el estado del grupo (ej: "activo", "cerrado", "finalizado")

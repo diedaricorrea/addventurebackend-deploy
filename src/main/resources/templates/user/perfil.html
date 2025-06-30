@@ -48,8 +48,11 @@
                         <div>
                             <div class="d-flex align-items-center gap-2">
                                 <h1 class="fs-2 fw-bold mb-0" th:text="${usuario.nombre}">María Rodríguez</h1>
-                                <span class="badge bg-success d-flex align-items-center gap-1">
-                                    <i class="bi bi-check-circle-fill"></i> Verificado
+                                <!-- Mostrar etiqueta verificado solo si tiene el logro correspondiente -->
+                                <span th:if="${logrosUsuario != null && !#lists.isEmpty(logrosUsuario.?[logro.nombre == 'Verificado'])}" 
+                                      class="badge bg-success d-flex align-items-center gap-1"
+                                      title="Usuario verificado por la comunidad (5+ reseñas positivas)">
+                                    <i class="bi bi-shield-check-fill"></i> Verificado
                                 </span>
                             </div>
                             <div class="d-flex flex-column flex-sm-row align-items-sm-center gap-2 mt-1">
@@ -91,18 +94,28 @@
                                 <i class="bi bi-geo-alt text-primary"></i>
                             </div>
                             <div>
-                                <p class="fs-3 fw-bold mb-0">8</p>
-                                <p class="small text-muted mb-0">Viajes</p>
+                                <p class="fs-3 fw-bold mb-0" th:text="${viajesCompletados ?: 0}">0</p>
+                                <p class="small text-muted mb-0">Viajes completados</p>
+                            </div>
+                        </div>
+                        <div class="vr h-75"></div>
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-warning bg-opacity-10 p-2 icon-circle-sm">
+                                <i class="bi bi-star text-warning"></i>
+                            </div>
+                            <div>
+                                <p class="fs-3 fw-bold mb-0" th:text="${totalResenas ?: 0}">0</p>
+                                <p class="small text-muted mb-0">Reseñas recibidas</p>
                             </div>
                         </div>
                         <div class="vr h-75"></div>
                         <div class="d-flex align-items-center gap-3">
                             <div class="bg-success bg-opacity-10 p-2 icon-circle-sm">
-                                <i class="bi bi-globe text-success"></i>
+                                <i class="bi bi-trophy text-success"></i>
                             </div>
                             <div>
-                                <p class="fs-3 fw-bold mb-0">5</p>
-                                <p class="small text-muted mb-0">Países</p>
+                                <p class="fs-3 fw-bold mb-0" th:text="${totalLogros ?: 0}">0</p>
+                                <p class="small text-muted mb-0">Logros obtenidos</p>
                             </div>
                         </div>
                     </div>
@@ -121,12 +134,6 @@
                     <button class="nav-link d-flex align-items-center" id="viajes-tab" data-bs-toggle="tab"
                         data-bs-target="#viajes" type="button" role="tab">
                         <i class="bi bi-compass me-2"></i> Viajes
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link d-flex align-items-center" id="pasaporte-tab" data-bs-toggle="tab"
-                        data-bs-target="#pasaporte" type="button" role="tab">
-                        <i class="bi bi-postage me-2"></i> Pasaporte
                     </button>
                 </li>
             </ul>
@@ -194,94 +201,61 @@
                             <div class="card">
                                 <div class="card-header">
                                     <h5 class="card-title mb-0">Reseñas de otros viajeros</h5>
-                                    <p class="card-text small text-muted">Usuario verificado con 5+ reseñas positivas
+                                    <p class="card-text small text-muted" th:if="${totalResenas > 0}">
+                                        <i class="bi bi-star-fill text-warning me-1"></i>
+                                        <span th:text="${promedioCalificaciones}">0.0</span> de 5 estrellas · 
+                                        <span th:text="${totalResenas}">0</span> reseña<span th:if="${totalResenas != 1}">s</span>
+                                    </p>
+                                    <p class="card-text small text-muted" th:if="${totalResenas == 0}">
+                                        <span th:if="${esPerfilPropio == null || esPerfilPropio}">Aún no tienes reseñas de otros viajeros.</span>
+                                        <span th:if="${esPerfilPropio != null && !esPerfilPropio}">Este usuario aún no tiene reseñas.</span>
                                     </p>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body" th:if="${resenasRecientes != null && !resenasRecientes.isEmpty()}">
                                     <div class="d-flex flex-column gap-4">
-                                        <!-- Review 1 -->
-                                        <div class="border rounded p-3">
+                                        <!-- Reseñas dinámicas -->
+                                        <div class="border rounded p-3" th:each="resena : ${resenasRecientes}">
                                             <div class="d-flex gap-3">
-                                                <div class="review-avatar">CM</div>
+                                                <div class="review-avatar" th:text="${resena.autor.nombre.substring(0,1).toUpperCase() + resena.autor.apellidos.substring(0,1).toUpperCase()}">XX</div>
                                                 <div class="flex-grow-1">
-                                                    <div
-                                                        class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center">
+                                                    <div class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center">
                                                         <div>
-                                                            <h6 class="mb-0">Carlos Mendoza</h6>
-                                                            <p class="small text-muted mb-0">Viaje a Barcelona · Abril
-                                                                2023</p>
-                                                        </div>
-                                                        <div class="stars-container mt-2 mt-sm-0">
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                        </div>
-                                                    </div>
-                                                    <p class="mt-2 mb-0">Excelente compañera de viaje. Muy organizada y
-                                                        siempre con buena actitud. Hizo que nuestro viaje a Barcelona
-                                                        fuera inolvidable.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Review 2 -->
-                                        <div class="border rounded p-3">
-                                            <div class="d-flex gap-3">
-                                                <div class="review-avatar">LG</div>
-                                                <div class="flex-grow-1">
-                                                    <div
-                                                        class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center">
-                                                        <div>
-                                                            <h6 class="mb-0">Laura Gómez</h6>
-                                                            <p class="small text-muted mb-0">Viaje a Roma · Julio 2023
+                                                            <h6 class="mb-0" th:text="${resena.autor.nombre + ' ' + resena.autor.apellidos}">Nombre del Usuario</h6>
+                                                            <p class="small text-muted mb-0">
+                                                                Viaje: <span th:text="${resena.grupo.nombreViaje}">Nombre del Viaje</span> · 
+                                                                <span th:text="${#temporals.format(resena.fecha, 'MMMM yyyy')}">Enero 2024</span>
                                                             </p>
                                                         </div>
                                                         <div class="stars-container mt-2 mt-sm-0">
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star-fill text-warning"></i>
+                                                            <!-- Estrellas dinámicas -->
+                                                            <th:block th:each="i : ${#numbers.sequence(1, 5)}">
+                                                                <i th:class="${i <= resena.calificacion ? 'bi bi-star-fill text-warning' : 'bi bi-star text-warning'}"></i>
+                                                            </th:block>
                                                         </div>
                                                     </div>
-                                                    <p class="mt-2 mb-0">María es una viajera experimentada y muy
-                                                        respetuosa. Compartimos habitación en Roma y fue una experiencia
-                                                        genial.</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Review 3 -->
-                                        <div class="border rounded p-3">
-                                            <div class="d-flex gap-3">
-                                                <div class="review-avatar">AT</div>
-                                                <div class="flex-grow-1">
-                                                    <div
-                                                        class="d-flex flex-column flex-sm-row justify-content-between align-items-sm-center">
-                                                        <div>
-                                                            <h6 class="mb-0">Alejandro Torres</h6>
-                                                            <p class="small text-muted mb-0">Viaje a Lisboa · Octubre
-                                                                2023</p>
-                                                        </div>
-                                                        <div class="stars-container mt-2 mt-sm-0">
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star-fill text-warning"></i>
-                                                            <i class="bi bi-star text-warning"></i>
-                                                        </div>
-                                                    </div>
-                                                    <p class="mt-2 mb-0">Muy buena comunicación y puntualidad.
-                                                        Recomendaría viajar con María sin dudarlo.</p>
+                                                    <p class="mt-2 mb-0" th:if="${resena.comentario != null && !resena.comentario.trim().isEmpty()}" th:text="${resena.comentario}">
+                                                        Comentario de la reseña...
+                                                    </p>
+                                                    <p class="mt-2 mb-0 text-muted fst-italic" th:if="${resena.comentario == null || resena.comentario.trim().isEmpty()}">
+                                                        Sin comentario adicional.
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card-footer">
-                                    <button class="btn btn-outline-primary w-100">Ver todas las reseñas (12)</button>
+                                <div class="card-body text-center py-5" th:if="${resenasRecientes == null || resenasRecientes.isEmpty()}">
+                                    <div class="text-muted">
+                                        <i class="bi bi-star display-1 mb-3"></i>
+                                        <h5 th:if="${esPerfilPropio == null || esPerfilPropio}">¡Únete a viajes para recibir tus primeras reseñas!</h5>
+                                        <h5 th:if="${esPerfilPropio != null && !esPerfilPropio}">Este usuario aún no tiene reseñas</h5>
+                                        <p th:if="${esPerfilPropio == null || esPerfilPropio}">Participa en viajes y grupos para que otros viajeros puedan calificarte.</p>
+                                    </div>
+                                </div>
+                                <div class="card-footer" th:if="${totalResenas > 5}">
+                                    <button class="btn btn-outline-primary w-100">
+                                        Ver todas las reseñas (<span th:text="${totalResenas}">0</span>)
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -291,77 +265,63 @@
                             <div class="card">
                                 <div class="card-header">
                                     <h5 class="card-title mb-0">Logros</h5>
-                                    <p class="card-text small text-muted">Insignias obtenidas durante tus aventuras</p>
+                                    <p class="card-text small text-muted" th:if="${totalLogros > 0}">
+                                        <span th:text="${totalLogros}">0</span> logro<span th:if="${totalLogros != 1}">s</span> obtenido<span th:if="${totalLogros != 1}">s</span>
+                                    </p>
+                                    <p class="card-text small text-muted" th:if="${totalLogros == 0}">
+                                        <span th:if="${esPerfilPropio == null || esPerfilPropio}">Participa en viajes para obtener logros</span>
+                                        <span th:if="${esPerfilPropio != null && !esPerfilPropio}">Este usuario aún no tiene logros</span>
+                                    </p>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body" th:if="${logrosUsuario != null && !logrosUsuario.isEmpty()}">
                                     <div class="row g-3">
-                                        <!-- Badge 1 -->
-                                        <div class="col-sm-4">
+                                        <!-- Logros dinámicos -->
+                                        <div class="col-sm-4" th:each="usuarioLogro : ${logrosUsuario}">
                                             <div class="d-flex align-items-center gap-3 border rounded p-3">
-                                                <div class="badge-icon bg-warning">
-                                                    <i class="bi bi-flag"></i>
+                                                <div th:class="'badge-icon ' + ${usuarioLogro.logro.nombre == 'Pioneer' ? 'bg-warning' : 
+                                                                                 usuarioLogro.logro.nombre == 'Pathfinder' ? 'bg-primary' : 
+                                                                                 usuarioLogro.logro.nombre == 'Verificado' ? 'bg-success' : 'bg-secondary'}">
+                                                    <i th:class="${usuarioLogro.logro.icono}"></i>
                                                 </div>
                                                 <div>
-                                                    <h6 class="mb-0">Pioneer</h6>
-                                                    <p class="small text-muted mb-0">Completó su primer viaje</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Badge 2 -->
-                                        <div class="col-sm-4">
-                                            <div class="d-flex align-items-center gap-3 border rounded p-3">
-                                                <div class="badge-icon bg-primary">
-                                                    <i class="bi bi-compass"></i>
-                                                </div>
-                                                <div>
-                                                    <h6 class="mb-0">Pathfinder</h6>
-                                                    <p class="small text-muted mb-0">Creó su primer grupo</p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <!-- Badge 3 -->
-                                        <div class="col-sm-4">
-                                            <div class="d-flex align-items-center gap-3 border rounded p-3">
-                                                <div class="badge-icon bg-success">
-                                                    <i class="bi bi-shield"></i>
-                                                </div>
-                                                <div>
-                                                    <h6 class="mb-0">Verificado</h6>
-                                                    <p class="small text-muted mb-0">Identidad verificada</p>
+                                                    <h6 class="mb-0" th:text="${usuarioLogro.logro.nombre}">Nombre del Logro</h6>
+                                                    <p class="small text-muted mb-0" th:text="${usuarioLogro.logro.descripcion}">Descripción del logro</p>
+                                                    <p class="small text-success mb-0">
+                                                        <i class="bi bi-calendar-check me-1"></i>
+                                                        <span th:text="${#temporals.format(usuarioLogro.fechaOtorgado, 'dd/MM/yyyy')}">01/01/2024</span>
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card-footer">
-                                    <button class="btn btn-outline-primary w-100">Ver todos los logros</button>
-                                </div>
-                            </div>
+                                <div class="card-body text-center py-5" th:if="${logrosUsuario == null || logrosUsuario.isEmpty()}">
+                                    <div class="text-muted">
+                                        <i class="bi bi-trophy display-1 mb-3"></i>
+                                        <h5 th:if="${esPerfilPropio == null || esPerfilPropio}">¡Comienza tu aventura para obtener logros!</h5>
+                                        <h5 th:if="${esPerfilPropio != null && !esPerfilPropio}">Este usuario aún no tiene logros</h5>
+                                                                                        <p th:if="${esPerfilPropio == null || esPerfilPropio}">
+                            Crea grupos, participa en viajes y obtén reseñas positivas para ganar insignias.
+                        </p>
+                        <div th:if="${esPerfilPropio == null || esPerfilPropio}" class="mt-3">
+                            <small class="text-muted">
+                                <strong>Logros disponibles:</strong><br/>
+                                🏆 <strong>Pioneer:</strong> Completa tu primer viaje<br/>
+                                🗺️ <strong>Pathfinder:</strong> Crea tu primer grupo<br/>
+                                🛡️ <strong>Verificado:</strong> Obtén 5+ reseñas positivas
+                            </small>
                         </div>
-
-                        <!-- Preferencias de viaje -->
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h5 class="card-title mb-0">Preferencias de viaje</h5>
-                                </div>
-                                <div class="card-body">
-                                    <div class="d-flex flex-column gap-4">
-                                        <div>
-                                            <h6 class="mb-2">Tipos de viaje favoritos</h6>
-                                            <div class="d-flex flex-wrap gap-2">
-                                                <span class="badge bg-secondary">Aventura</span>
-                                                <span class="badge bg-secondary">Cultural</span>
-                                                <span class="badge bg-secondary">Playa</span>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <h6 class="mb-2">Rango de edad preferido</h6>
-                                            <span class="badge bg-light text-dark border">26-35</span>
+                        <div th:if="${esPerfilPropio == null || esPerfilPropio}" class="mt-3">
+                                            <span class="badge bg-warning me-2"><i class="bi bi-flag me-1"></i>Pioneer</span>
+                                            <span class="badge bg-primary me-2"><i class="bi bi-compass me-1"></i>Pathfinder</span>
+                                            <span class="badge bg-success"><i class="bi bi-shield me-1"></i>Verificado</span>
                                         </div>
                                     </div>
+                                </div>
+                                <div class="card-footer" th:if="${totalLogros > 3}">
+                                    <button class="btn btn-outline-primary w-100">
+                                        Ver todos los logros (<span th:text="${totalLogros}">0</span>)
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -376,52 +336,46 @@
                             <div class="card">
                                 <div class="card-header">
                                     <h5 class="card-title mb-0">Próximos viajes</h5>
+                                    <p class="card-text small text-muted" th:if="${totalProximosViajes > 0}">
+                                        <span th:text="${totalProximosViajes}">0</span> viaje<span th:if="${totalProximosViajes != 1}">s</span> programado<span th:if="${totalProximosViajes != 1}">s</span>
+                                    </p>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body" th:if="${proximosViajes != null && !proximosViajes.isEmpty()}">
                                     <div class="row g-3">
-                                        <!-- Trip 1 -->
-                                        <div class="col-md-4">
-                                            <a href="#" class="text-decoration-none">
+                                        <!-- Viajes dinámicos -->
+                                        <div class="col-md-4" th:each="grupo : ${proximosViajes}">
+                                            <a th:href="@{/grupos/detalles/{id}(id=${grupo.idGrupo})}" class="text-decoration-none">
                                                 <div class="border rounded overflow-hidden trip-card">
                                                     <div class="position-relative trip-image">
-                                                        <img src="img/machu-picchu.jpg" alt="Machu Picchu"
-                                                            class="img-fluid w-100">
-                                                        <span
-                                                            class="position-absolute top-0 start-0 m-2 badge bg-primary rounded-pill">Perú</span>
+                                                        <img th:src="${grupo.viaje != null && grupo.viaje.imagenDestacada != null ? grupo.viaje.imagenDestacada : '/images/default-trip.jpg'}" 
+                                                             th:alt="${grupo.nombreViaje}"
+                                                             class="img-fluid w-100" style="height: 200px; object-fit: cover;">
+                                                        <span class="position-absolute top-0 start-0 m-2 badge bg-primary rounded-pill"
+                                                              th:text="${grupo.viaje != null && grupo.viaje.destinoPrincipal != null ? grupo.viaje.destinoPrincipal : 'Destino'}">Destino</span>
+                                                        <span class="position-absolute top-0 end-0 m-2 badge bg-success rounded-pill">Activo</span>
                                                     </div>
                                                     <div class="p-3">
-                                                        <h6 class="mb-0">Machu Picchu</h6>
-                                                        <div
-                                                            class="d-flex align-items-center gap-1 small text-muted mt-1">
+                                                        <h6 class="mb-0" th:text="${grupo.nombreViaje}">Nombre del Viaje</h6>
+                                                        <div class="d-flex align-items-center gap-1 small text-muted mt-1" th:if="${grupo.viaje != null}">
                                                             <i class="bi bi-calendar"></i>
-                                                            <span>15-22 Jul 2025</span>
+                                                            <span th:text="${grupo.viaje.fechaInicio != null ? #temporals.format(grupo.viaje.fechaInicio, 'dd MMM yyyy') : 'Fecha por definir'}">Fecha</span>
+                                                            <span th:if="${grupo.viaje.fechaFin != null}"> - </span>
+                                                            <span th:if="${grupo.viaje.fechaFin != null}" th:text="${#temporals.format(grupo.viaje.fechaFin, 'dd MMM yyyy')}">Fecha fin</span>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </a>
                                         </div>
-
-                                        <!-- Trip 2 -->
-                                        <div class="col-md-4">
-                                            <a href="#" class="text-decoration-none">
-                                                <div class="border rounded overflow-hidden trip-card">
-                                                    <div class="position-relative trip-image">
-                                                        <img src="img/riviera-maya.jpg" alt="Riviera Maya"
-                                                            class="img-fluid w-100">
-                                                        <span
-                                                            class="position-absolute top-0 start-0 m-2 badge bg-primary rounded-pill">México</span>
-                                                    </div>
-                                                    <div class="p-3">
-                                                        <h6 class="mb-0">Riviera Maya</h6>
-                                                        <div
-                                                            class="d-flex align-items-center gap-1 small text-muted mt-1">
-                                                            <i class="bi bi-calendar"></i>
-                                                            <span>5-13 Sep 2025</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </a>
-                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body text-center py-5" th:if="${proximosViajes == null || proximosViajes.isEmpty()}">
+                                    <div class="text-muted">
+                                        <i class="bi bi-calendar-plus display-1 mb-3"></i>
+                                        <h5 th:if="${esPerfilPropio == null || esPerfilPropio}">¡No tienes próximos viajes!</h5>
+                                        <h5 th:if="${esPerfilPropio != null && !esPerfilPropio}">Este usuario no tiene próximos viajes</h5>
+                                        <p th:if="${esPerfilPropio == null || esPerfilPropio}">
+                                            <a th:href="@{/grupos}" class="btn btn-primary">Explorar grupos</a>
+                                        </p>
                                     </div>
                                 </div>
                             </div>
@@ -432,29 +386,31 @@
                             <div class="card">
                                 <div class="card-header">
                                     <h5 class="card-title mb-0">Historial de viajes</h5>
+                                    <p class="card-text small text-muted" th:if="${totalHistorialViajes > 0}">
+                                        <span th:text="${totalHistorialViajes}">0</span> viaje<span th:if="${totalHistorialViajes != 1}">s</span> completado<span th:if="${totalHistorialViajes != 1}">s</span>
+                                    </p>
                                 </div>
-                                <div class="card-body">
+                                <div class="card-body" th:if="${historialViajes != null && !historialViajes.isEmpty()}">
                                     <div class="row g-3">
-                                        <!-- Past Trip 1 -->
-                                        <div class="col-md-4">
-                                            <a href="#" class="text-decoration-none">
+                                        <!-- Historial dinámico -->
+                                        <div class="col-md-4" th:each="grupo : ${historialViajes}">
+                                            <a th:href="@{/grupos/detalles/{id}(id=${grupo.idGrupo})}" class="text-decoration-none">
                                                 <div class="border rounded overflow-hidden trip-card">
                                                     <div class="position-relative trip-image">
-                                                        <img src="img/cartagena.jpeg" alt="Barcelona"
-                                                            class="img-fluid w-100">
-                                                        <div
-                                                            class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-40">
-                                                            <span class="badge bg-dark">Completado</span>
+                                                        <img th:src="${grupo.viaje != null && grupo.viaje.imagenDestacada != null ? grupo.viaje.imagenDestacada : '/images/default-trip.jpg'}" 
+                                                             th:alt="${grupo.nombreViaje}"
+                                                             class="img-fluid w-100" style="height: 200px; object-fit: cover;">
+                                                        <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center bg-dark bg-opacity-40">
+                                                            <span class="badge bg-dark" th:text="${grupo.estado == 'cerrado' ? 'Cerrado' : 'Concluido'}">Completado</span>
                                                         </div>
-                                                        <span
-                                                            class="position-absolute top-0 start-0 m-2 badge bg-primary rounded-pill">España</span>
+                                                        <span class="position-absolute top-0 start-0 m-2 badge bg-primary rounded-pill"
+                                                              th:text="${grupo.viaje != null && grupo.viaje.destinoPrincipal != null ? grupo.viaje.destinoPrincipal : 'Destino'}">Destino</span>
                                                     </div>
                                                     <div class="p-3">
-                                                        <h6 class="mb-0">Barcelona</h6>
-                                                        <div
-                                                            class="d-flex align-items-center gap-1 small text-muted mt-1">
+                                                        <h6 class="mb-0" th:text="${grupo.nombreViaje}">Nombre del Viaje</h6>
+                                                        <div class="d-flex align-items-center gap-1 small text-muted mt-1" th:if="${grupo.viaje != null}">
                                                             <i class="bi bi-calendar"></i>
-                                                            <span>10-15 Mar 2023</span>
+                                                            <span th:text="${grupo.viaje.fechaInicio != null ? #temporals.format(grupo.viaje.fechaInicio, 'dd MMM yyyy') : 'Fecha por definir'}">Fecha</span>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -462,103 +418,20 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="card-footer">
-                                    <button class="btn btn-outline-primary w-100">Ver historial completo</button>
+                                <div class="card-body text-center py-5" th:if="${historialViajes == null || historialViajes.isEmpty()}">
+                                    <div class="text-muted">
+                                        <i class="bi bi-clock-history display-1 mb-3"></i>
+                                        <h5 th:if="${esPerfilPropio == null || esPerfilPropio}">¡Aún no has completado ningún viaje!</h5>
+                                        <h5 th:if="${esPerfilPropio != null && !esPerfilPropio}">Este usuario no ha completado ningún viaje</h5>
+                                        <p th:if="${esPerfilPropio == null || esPerfilPropio}">Participa en viajes para crear tu historial de aventuras.</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Pasaporte Tab -->
-                <div class="tab-pane fade" id="pasaporte" role="tabpanel">
-                    <div class="card">
-                        <div class="card-header d-flex align-items-center gap-2">
-                            <i class="bi bi-postage text-primary"></i>
-                            <h5 class="card-title mb-0">Pasaporte Digital</h5>
-                        </div>
-                        <div class="card-body">
-                            <div class="bg-light border rounded p-4 mb-4">
-                                <div class="d-flex flex-column align-items-center mb-4">
-                                    <div class="bg-primary text-white p-3 icon-circle mb-2">
-                                        <i class="bi bi-globe fs-2"></i>
-                                    </div>
-                                    <h3 class="text-primary fw-bold">Pasaporte de María Rodríguez</h3>
-                                    <p class="text-primary">5 países visitados · 5 viajes completados</p>
-                                </div>
 
-                                <!-- Country Stamps -->
-                                <div class="row g-2">
-                                    <!-- Country 1 -->
-                                    <div class="col-4 col-md-2">
-                                        <div class="bg-white border rounded p-2 text-center passport-stamp">
-                                            <div class="stamp-image mb-1">
-                                                <img src="https://via.placeholder.com/80" alt="España"
-                                                    class="img-fluid">
-                                            </div>
-                                            <h6 class="mb-0 fs-6">España</h6>
-                                            <p class="small text-muted mb-0">Marzo 2023</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Country 2 -->
-                                    <div class="col-4 col-md-2">
-                                        <div class="bg-white border rounded p-2 text-center passport-stamp">
-                                            <div class="stamp-image mb-1">
-                                                <img src="https://via.placeholder.com/80" alt="Italia"
-                                                    class="img-fluid">
-                                            </div>
-                                            <h6 class="mb-0 fs-6">Italia</h6>
-                                            <p class="small text-muted mb-0">Junio 2023</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Country 3 -->
-                                    <div class="col-4 col-md-2">
-                                        <div class="bg-white border rounded p-2 text-center passport-stamp">
-                                            <div class="stamp-image mb-1">
-                                                <img src="https://via.placeholder.com/80" alt="Francia"
-                                                    class="img-fluid">
-                                            </div>
-                                            <h6 class="mb-0 fs-6">Francia</h6>
-                                            <p class="small text-muted mb-0">Septiembre 2023</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Country 4 -->
-                                    <div class="col-4 col-md-2">
-                                        <div class="bg-white border rounded p-2 text-center passport-stamp">
-                                            <div class="stamp-image mb-1">
-                                                <img src="https://via.placeholder.com/80" alt="Portugal"
-                                                    class="img-fluid">
-                                            </div>
-                                            <h6 class="mb-0 fs-6">Portugal</h6>
-                                            <p class="small text-muted mb-0">Diciembre 2023</p>
-                                        </div>
-                                    </div>
-
-                                    <!-- Country 5 -->
-                                    <div class="col-4 col-md-2">
-                                        <div class="bg-white border rounded p-2 text-center passport-stamp">
-                                            <div class="stamp-image mb-1">
-                                                <img src="https://via.placeholder.com/80" alt="Reino Unido"
-                                                    class="img-fluid">
-                                            </div>
-                                            <h6 class="mb-0 fs-6">Reino Unido</h6>
-                                            <p class="small text-muted mb-0">Febrero 2024</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-footer">
-                            <button class="btn btn-primary w-100">
-                                <i class="bi bi-person me-2"></i>
-                                Compartir mi perfil
-                            </button>
-                        </div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -569,6 +442,5 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <!-- Custom JS -->
     <script src="js/Perfil.js"></script>
-</body>
-
+  </body>
 </html>

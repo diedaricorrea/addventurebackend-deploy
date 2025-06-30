@@ -301,16 +301,16 @@
                                         </button>
                                     </div>
 
-                                    <!-- Botón para abandonar el grupo (si es miembro aceptado pero no creador) -->
+                                    <!-- Botón para abandonar el grupo (si es miembro aceptado pero no creador y grupo activo) -->
                                     <button id="leaveGroupBtn" class="btn btn-outline-danger"
-                                        th:if="${#authentication.isAuthenticated() && !@permisos.esCreador(grupo.idGrupo) && @permisos.puedeAccederChat(grupo.idGrupo)}"
+                                        th:if="${#authentication.isAuthenticated() && !@permisos.esCreador(grupo.idGrupo) && @permisos.puedeAccederChat(grupo.idGrupo) && grupo.estado == 'activo'}"
                                         data-bs-toggle="modal" data-bs-target="#leaveGroupModal">
                                         <i class="bi bi-box-arrow-right me-2"></i> Abandonar grupo
                                     </button>
 
-                                    <!-- Botón para editar grupo (si tiene permisos) -->
+                                    <!-- Botón para editar grupo (si tiene permisos y grupo activo) -->
                                     <a th:href="@{/grupos/editar/{id}(id=${grupo.idGrupo})}" class="btn btn-outline-secondary"
-                                       th:if="${#authentication.isAuthenticated() && @permisos.puedeEditarGrupo(grupo.idGrupo)}">
+                                       th:if="${#authentication.isAuthenticated() && @permisos.puedeEditarGrupo(grupo.idGrupo) && grupo.estado == 'activo'}">
                                         <i class="bi bi-pencil me-2"></i> Editar grupo
                                     </a>
 
@@ -769,18 +769,25 @@
                     method: 'POST',
                     body: formData
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error(text || 'Error del servidor');
+                        });
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.idMensaje) {
                         chatInput.value = '';
                         // No necesitamos recargar todos los mensajes, WebSocket se encarga
                     } else {
-                        alert('Error al enviar mensaje');
+                        mostrarMensajeError('No se pudo enviar el mensaje');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error al enviar mensaje');
+                    mostrarMensajeError(error.message || 'Error al enviar mensaje');
                 });
             }
 
@@ -833,7 +840,9 @@
                 })
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        return response.text().then(text => {
+                            throw new Error(text || 'Error del servidor');
+                        });
                     }
                     return response.json();
                 })
@@ -842,12 +851,12 @@
                         imageInput.value = '';
                         // No necesitamos recargar todos los mensajes, WebSocket se encarga
                     } else {
-                        alert('Error al enviar imagen: ' + (data.message || 'Error desconocido'));
+                        mostrarMensajeError('No se pudo enviar la imagen');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    alert('Error al enviar imagen: ' + error.message);
+                    mostrarMensajeError(error.message || 'Error al enviar imagen');
                 });
             });
 
@@ -1085,6 +1094,40 @@
             if (messageDiv) {
                 messageDiv.remove();
             }
+        }
+
+        // Función para mostrar mensajes de error elegantes
+        function mostrarMensajeError(mensaje) {
+            // Buscar si ya existe un mensaje de error para no duplicar
+            const existingAlert = document.querySelector('.chat-error-alert');
+            if (existingAlert) {
+                existingAlert.remove();
+            }
+
+            // Crear el alert elegante
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-danger alert-dismissible fade show chat-error-alert';
+            alertDiv.style.cssText = 'margin: 10px 0; border-radius: 8px;';
+            alertDiv.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div>
+                        <strong>💬 AddVenture:</strong> ${mensaje}
+                    </div>
+                    <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            // Insertar el mensaje arriba del área de chat
+            const chatMessages = document.getElementById('chatMessages');
+            chatMessages.parentElement.insertBefore(alertDiv, chatMessages);
+
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.remove();
+                }
+            }, 5000);
         }
 
         function setupModals() {
