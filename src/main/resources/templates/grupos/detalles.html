@@ -665,15 +665,15 @@
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                alert(data.message || 'Solicitud enviada exitosamente');
-                                location.reload();
+                                mostrarMensajeExito(data.message || 'Solicitud enviada exitosamente');
+                                setTimeout(() => location.reload(), 1500);
                             } else {
-                                alert(data.error || 'Error al enviar solicitud');
+                                mostrarMensajeError(data.error || 'Error al enviar solicitud');
                             }
                         })
                         .catch(error => {
                             console.error('Error:', error);
-                            alert('Error al unirse al grupo. Inténtalo de nuevo.');
+                            mostrarMensajeError('Error al unirse al grupo. Inténtalo de nuevo.');
                         });
                 });
             }
@@ -682,28 +682,30 @@
             const retryJoinBtn = document.getElementById('retryJoinBtn');
             if (retryJoinBtn) {
                 retryJoinBtn.addEventListener('click', function () {
-                    if (confirm('¿Estás seguro de que quieres volver a solicitar unirte a este grupo?')) {
-                        // Enviar solicitud para unirse al grupo
-                        fetch(`/grupos/${grupoId}/unirse`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            }
-                        })
-                            .then(response => response.json())
-                            .then(data => {
-                                if (data.success) {
-                                    alert(data.message || 'Nueva solicitud enviada exitosamente');
-                                    location.reload();
-                                } else {
-                                    alert(data.error || 'Error al enviar solicitud');
+                    mostrarConfirmacion('¿Estás seguro de que quieres volver a solicitar unirte a este grupo?', (confirmado) => {
+                        if (confirmado) {
+                            // Enviar solicitud para unirse al grupo
+                            fetch(`/grupos/${grupoId}/unirse`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
                                 }
                             })
-                            .catch(error => {
-                                console.error('Error:', error);
-                                alert('Error al enviar solicitud. Inténtalo de nuevo.');
-                            });
-                    }
+                                .then(response => response.json())
+                                .then(data => {
+                                    if (data.success) {
+                                        mostrarMensajeExito(data.message || 'Nueva solicitud enviada exitosamente');
+                                        setTimeout(() => location.reload(), 1500);
+                                    } else {
+                                        mostrarMensajeError(data.error || 'Error al enviar solicitud');
+                                    }
+                                })
+                                .catch(error => {
+                                    console.error('Error:', error);
+                                    mostrarMensajeError('Error al enviar solicitud. Inténtalo de nuevo.');
+                                });
+                        }
+                    });
                 });
             }
 
@@ -716,27 +718,29 @@
             const closeGroupBtn = document.getElementById('closeGroupBtn');
             if (closeGroupBtn) {
                 closeGroupBtn.addEventListener('click', function() {
-                    if (confirm('¿Estás seguro de que quieres cerrar este viaje? Esta acción no se puede deshacer y habilitará las calificaciones.')) {
-                        fetch(`/chat/grupo/${grupoId}/cerrar`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            }
-                        })
-                        .then(response => response.text())
-                        .then(data => {
-                            if (data.includes('éxito') || data.includes('cerrado')) {
-                                alert('Viaje cerrado exitosamente');
-                                location.reload();
-                            } else {
-                                alert('Error al cerrar el viaje: ' + data);
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error:', error);
-                            alert('Error al cerrar el viaje');
-                        });
-                    }
+                    mostrarConfirmacion('¿Estás seguro de que quieres cerrar este viaje? Esta acción no se puede deshacer y habilitará las calificaciones.', (confirmado) => {
+                        if (confirmado) {
+                            fetch(`/chat/grupo/${grupoId}/cerrar`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                }
+                            })
+                            .then(response => response.text())
+                            .then(data => {
+                                if (data.includes('éxito') || data.includes('cerrado')) {
+                                    mostrarMensajeExito('Viaje cerrado exitosamente');
+                                    setTimeout(() => location.reload(), 1500);
+                                } else {
+                                    mostrarMensajeError('Error al cerrar el viaje: ' + data);
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                mostrarMensajeError('Error al cerrar el viaje');
+                            });
+                        }
+                    });
                 });
             }
 
@@ -811,14 +815,14 @@
 
                 // Validar tipo de archivo
                 if (!file.type.startsWith('image/')) {
-                    alert('Solo se permiten archivos de imagen');
+                    mostrarMensajeError('Solo se permiten archivos de imagen');
                     imageInput.value = '';
                     return;
                 }
 
                 // Validar tamaño (máximo 5MB)
                 if (file.size > 5 * 1024 * 1024) {
-                    alert('La imagen es demasiado grande. Máximo 5MB');
+                    mostrarMensajeError('La imagen es demasiado grande. Máximo 5MB');
                     imageInput.value = '';
                     return;
                 }
@@ -1177,7 +1181,7 @@
                 document.getElementById('confirmAssignRoleBtn').addEventListener('click', function () {
                     const roleSelect = document.getElementById('roleSelect');
                     if (!roleSelect.value) {
-                        alert('Por favor selecciona un rol');
+                        mostrarMensajeError('Por favor selecciona un rol');
                         return;
                     }
                     document.getElementById('assignRoleForm').submit();
@@ -1211,7 +1215,7 @@
                 // Confirmar eliminación
                 confirmDeleteBtn.addEventListener('click', function() {
                     if (deleteConfirmText.value.trim().toUpperCase() !== 'ELIMINAR') {
-                        alert('Debes escribir "ELIMINAR" para confirmar');
+                        mostrarMensajeError('Debes escribir "ELIMINAR" para confirmar');
                         return;
                     }
 
@@ -1230,20 +1234,20 @@
                     .then(data => {
                         if (data.success) {
                             // Éxito - redirigir
-                            alert(data.mensaje || 'Grupo eliminado exitosamente');
-                            window.location.href = '/grupos/mis-viajes';
+                            mostrarMensajeExito(data.mensaje || 'Grupo eliminado exitosamente');
+                            setTimeout(() => window.location.href = '/grupos/mis-viajes', 1500);
                         } else if (data.requiereVotacion) {
                             // Requiere votación
                             showVotationInfo(data);
                         } else {
                             // Error
-                            alert(data.error || 'Error al eliminar el grupo');
+                            mostrarMensajeError(data.error || 'Error al eliminar el grupo');
                             resetDeleteButton();
                         }
                     })
                     .catch(error => {
                         console.error('Error:', error);
-                        alert('Error de conexión al eliminar el grupo');
+                        mostrarMensajeError('Error de conexión al eliminar el grupo');
                         resetDeleteButton();
                     });
                 });
@@ -1274,6 +1278,111 @@
                     resetDeleteButton();
                 }
             }
+        }
+
+        // Funciones para mensajes elegantes
+        function mostrarMensajeExito(mensaje) {
+            const alertContainer = document.createElement('div');
+            alertContainer.innerHTML = `
+                <div class="alert alert-success alert-dismissible fade show position-fixed" 
+                     style="top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" 
+                     role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                        <div>
+                            <strong>✅ AddVenture:</strong> ${mensaje}
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            document.body.appendChild(alertContainer);
+            
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.classList.remove('show');
+                    setTimeout(() => alertContainer.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        function mostrarMensajeError(mensaje) {
+            const alertContainer = document.createElement('div');
+            alertContainer.innerHTML = `
+                <div class="alert alert-danger alert-dismissible fade show position-fixed" 
+                     style="top: 20px; right: 20px; z-index: 9999; min-width: 300px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);" 
+                     role="alert">
+                    <div class="d-flex align-items-center">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+                        <div>
+                            <strong>❌ AddVenture:</strong> ${mensaje}
+                        </div>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            document.body.appendChild(alertContainer);
+            
+            // Auto-remover después de 5 segundos
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    alert.classList.remove('show');
+                    setTimeout(() => alertContainer.remove(), 300);
+                }
+            }, 5000);
+        }
+
+        function mostrarConfirmacion(mensaje, callback) {
+            const modal = document.createElement('div');
+            modal.innerHTML = `
+                <div class="modal fade" tabindex="-1" style="z-index: 9999;">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning text-dark">
+                                <h5 class="modal-title">
+                                    <i class="bi bi-question-circle me-2"></i>
+                                    Confirmación
+                                </h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="d-flex align-items-start">
+                                    <i class="bi bi-exclamation-triangle text-warning me-3 fs-3"></i>
+                                    <div>
+                                        <p class="mb-0">${mensaje}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                    <i class="bi bi-x me-1"></i> Cancelar
+                                </button>
+                                <button type="button" class="btn btn-warning" id="confirmBtn">
+                                    <i class="bi bi-check me-1"></i> Confirmar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+            
+            const bootstrapModal = new bootstrap.Modal(modal.querySelector('.modal'));
+            bootstrapModal.show();
+            
+            // Manejar confirmación
+            modal.querySelector('#confirmBtn').addEventListener('click', () => {
+                bootstrapModal.hide();
+                callback(true);
+            });
+            
+            // Limpiar al cerrar
+            modal.addEventListener('hidden.bs.modal', () => {
+                modal.remove();
+            });
         }
 
         // CSS adicional para avatares y chat
