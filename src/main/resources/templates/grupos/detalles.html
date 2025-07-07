@@ -87,18 +87,83 @@
                                 </div>
 
                                 <!-- Itinerary -->
-                                <div class="mb-5" th:if="${grupo.itinerarios != null && !grupo.itinerarios.isEmpty()}">
-                                    <h2 class="fs-3 fw-bold mb-3">Itinerario</h2>
-                                    <div class="bg-light p-4 rounded">
-                                        <ul class="list-unstyled mb-0">
-                                            <li class="d-flex align-items-start mb-3"
-                                                th:each="itinerario : ${grupo.itinerarios}">
-                                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center flex-shrink-0 me-3"
-                                                    style="width: 28px; height: 28px;"
-                                                    th:text="${itinerario.diaNumero}">1</div>
-                                                <span th:text="${itinerario.titulo}">Día 1: Título</span>
-                                            </li>
-                                        </ul>
+                                <div class="mb-5" th:if="${itinerariosOrdenados != null && !itinerariosOrdenados.isEmpty()}">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h2 class="fs-3 fw-bold mb-0">Itinerario del viaje</h2>
+                                        <span class="badge bg-primary" th:text="${#lists.size(itinerariosOrdenados)} + ' días'">0 días</span>
+                                    </div>
+                                    
+                                    <div class="accordion" id="itinerarioAccordion">
+                                        <div class="accordion-item mb-3" th:each="itinerario, iterStat : ${itinerariosOrdenados}">
+                                            <h2 class="accordion-header" th:id="'heading' + ${itinerario.diaNumero}">
+                                                <button class="accordion-button" type="button" 
+                                                        data-bs-toggle="collapse" 
+                                                        th:data-bs-target="'#collapse' + ${itinerario.diaNumero}"
+                                                        th:aria-controls="'collapse' + ${itinerario.diaNumero}"
+                                                        th:class="${iterStat.first} ? 'accordion-button' : 'accordion-button collapsed'">
+                                                    <div class="d-flex align-items-center w-100">
+                                                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-3"
+                                                             style="width: 32px; height: 32px; min-width: 32px;"
+                                                             th:text="${itinerario.diaNumero}">1</div>
+                                                        <div class="flex-grow-1">
+                                                            <strong th:text="${itinerario.titulo}">Título del día</strong>
+                                                            <div class="small text-muted" 
+                                                                 th:if="${itinerario.duracionEstimada != null && !itinerario.duracionEstimada.isEmpty()}"
+                                                                 th:text="'Duración: ' + ${itinerario.duracionEstimada}">
+                                                                Duración estimada
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            </h2>
+                                            <div th:id="'collapse' + ${itinerario.diaNumero}" 
+                                                 th:class="${iterStat.first} ? 'accordion-collapse collapse show' : 'accordion-collapse collapse'"
+                                                 th:aria-labelledby="'heading' + ${itinerario.diaNumero}"
+                                                 data-bs-parent="#itinerarioAccordion">
+                                                <div class="accordion-body">
+                                                    <!-- Descripción -->
+                                                    <div class="mb-3" th:if="${itinerario.descripcion != null && !itinerario.descripcion.isEmpty()}">
+                                                        <h6 class="fw-semibold text-dark mb-2">
+                                                            <i class="bi bi-card-text me-2 text-primary"></i>Descripción de actividades
+                                                        </h6>
+                                                        <p class="mb-0 text-secondary" th:text="${itinerario.descripcion}">
+                                                            Descripción de las actividades del día
+                                                        </p>
+                                                    </div>
+                                                    
+                                                    <!-- Puntos de partida y llegada -->
+                                                    <div class="row" th:if="${(itinerario.puntoPartida != null && !itinerario.puntoPartida.isEmpty()) || (itinerario.puntoLlegada != null && !itinerario.puntoLlegada.isEmpty())}">
+                                                        <div class="col-md-6 mb-3" th:if="${itinerario.puntoPartida != null && !itinerario.puntoPartida.isEmpty()}">
+                                                            <h6 class="fw-semibold text-dark mb-2">
+                                                                <i class="bi bi-geo-alt me-2 text-success"></i>Punto de partida
+                                                            </h6>
+                                                            <p class="mb-0 text-secondary" th:text="${itinerario.puntoPartida}">
+                                                                Punto de partida
+                                                            </p>
+                                                        </div>
+                                                        <div class="col-md-6 mb-3" th:if="${itinerario.puntoLlegada != null && !itinerario.puntoLlegada.isEmpty()}">
+                                                            <h6 class="fw-semibold text-dark mb-2">
+                                                                <i class="bi bi-geo-alt-fill me-2 text-danger"></i>Punto de llegada
+                                                            </h6>
+                                                            <p class="mb-0 text-secondary" th:text="${itinerario.puntoLlegada}">
+                                                                Punto de llegada
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    
+                                                    <!-- Duración estimada (si no se mostró en el header) -->
+                                                    <div class="mb-0" th:if="${itinerario.duracionEstimada != null && !itinerario.duracionEstimada.isEmpty()}">
+                                                        <h6 class="fw-semibold text-dark mb-2">
+                                                            <i class="bi bi-clock me-2 text-warning"></i>Duración estimada
+                                                        </h6>
+                                                        <span class="badge bg-outline-primary text-primary border border-primary" 
+                                                              th:text="${itinerario.duracionEstimada}">
+                                                            Duración
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 

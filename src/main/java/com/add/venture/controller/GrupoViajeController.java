@@ -43,6 +43,7 @@ import com.add.venture.dto.CrearGrupoViajeDTO;
 import com.add.venture.dto.DiaItinerarioDTO;
 import com.add.venture.helper.UsuarioAutenticadoHelper;
 import com.add.venture.model.GrupoViaje;
+import com.add.venture.model.Itinerario;
 import com.add.venture.model.MensajeGrupo;
 import com.add.venture.model.Notificacion;
 import com.add.venture.model.ParticipanteGrupo;
@@ -56,6 +57,7 @@ import com.add.venture.repository.ParticipanteGrupoRepository;
 import com.add.venture.repository.UsuarioRepository;
 import com.add.venture.repository.UsuarioRolGrupoRepository;
 import com.add.venture.repository.ViajeRepository;
+import com.add.venture.repository.ItinerarioRepository;
 import com.add.venture.service.IGrupoViajeService;
 import com.add.venture.service.INotificacionService;
 import com.add.venture.service.IPermisosService;
@@ -98,6 +100,9 @@ public class GrupoViajeController {
 
     @Autowired
     private NotificacionRepository notificacionRepository;
+
+    @Autowired
+    private ItinerarioRepository itinerarioRepository;
 
     @GetMapping
     public String listarGrupos(
@@ -157,6 +162,10 @@ public class GrupoViajeController {
                 .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
 
         model.addAttribute("grupo", grupo);
+
+        // Cargar itinerarios ordenados por día
+        List<Itinerario> itinerariosOrdenados = itinerarioRepository.findByGrupoOrderByDiaNumeroAsc(grupo);
+        model.addAttribute("itinerariosOrdenados", itinerariosOrdenados);
 
         // Verificar si el usuario autenticado es participante del grupo
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();

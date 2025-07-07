@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.LinkedHashSet;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
@@ -146,7 +147,7 @@ public class GrupoViajeServiceImpl implements IGrupoViajeService {
 
         // Procesar itinerario si se especificó
         if (dto.getDiasItinerario() != null && !dto.getDiasItinerario().isEmpty()) {
-            Set<Itinerario> itinerarios = new HashSet<>();
+            Set<Itinerario> itinerarios = new LinkedHashSet<>();
             for (DiaItinerarioDTO diaDTO : dto.getDiasItinerario()) {
                 Itinerario itinerario = new Itinerario();
                 itinerario.setDiaNumero(diaDTO.getDiaNumero());
@@ -282,7 +283,7 @@ public class GrupoViajeServiceImpl implements IGrupoViajeService {
             if (grupo.getItinerarios() != null) {
                 grupo.getItinerarios().clear();
             } else {
-                grupo.setItinerarios(new HashSet<>());
+                grupo.setItinerarios(new LinkedHashSet<>());
             }
             
             // Forzar el flush para que la eliminación se ejecute inmediatamente
