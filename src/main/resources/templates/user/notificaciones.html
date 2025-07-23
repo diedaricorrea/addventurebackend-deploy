@@ -16,21 +16,26 @@
             transition: all 0.3s ease;
             border-left: 4px solid transparent;
         }
+
         .notification-card:hover {
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
+
         .notification-unread {
             border-left-color: #007bff;
             background-color: #f8f9fa;
         }
+
         .notification-read {
             border-left-color: #6c757d;
         }
+
         .notification-actions {
             display: flex;
             gap: 10px;
             margin-top: 15px;
         }
+
         .user-avatar {
             width: 50px;
             height: 50px;
@@ -87,7 +92,8 @@
                                 <!-- Icono según tipo de notificación -->
                                 <div class="me-3">
                                     <div class="user-avatar">
-                                        <i class="bi bi-person-plus" th:if="${notificacion.tipo == 'SOLICITUD_UNION'}"></i>
+                                        <i class="bi bi-person-plus"
+                                            th:if="${notificacion.tipo == 'SOLICITUD_UNION'}"></i>
                                         <i class="bi bi-bell" th:unless="${notificacion.tipo == 'SOLICITUD_UNION'}"></i>
                                     </div>
                                 </div>
@@ -95,10 +101,13 @@
                                 <div class="flex-grow-1">
                                     <div class="d-flex justify-content-between align-items-start mb-2">
                                         <h6 class="mb-0 fw-bold">
-                                            <span th:if="${notificacion.tipo == 'SOLICITUD_UNION'}">Solicitud de unión</span>
-                                            <span th:unless="${notificacion.tipo == 'SOLICITUD_UNION'}" th:text="${notificacion.tipo}">Tipo</span>
+                                            <span th:if="${notificacion.tipo == 'SOLICITUD_UNION'}">Solicitud de
+                                                unión</span>
+                                            <span th:unless="${notificacion.tipo == 'SOLICITUD_UNION'}"
+                                                th:text="${notificacion.tipo}">Tipo</span>
                                         </h6>
-                                        <small class="text-muted" th:text="${#temporals.format(notificacion.fecha, 'dd/MM/yyyy HH:mm')}">
+                                        <small class="text-muted"
+                                            th:text="${#temporals.format(notificacion.fecha, 'dd/MM/yyyy HH:mm')}">
                                             Fecha
                                         </small>
                                     </div>
@@ -115,86 +124,100 @@
                                         <span th:if="${notificacion.leido}" class="badge bg-secondary">
                                             <i class="bi bi-check me-1"></i>Leído
                                         </span>
-                                        
+
                                         <!-- Badge especial para rechazo -->
-                                        <span th:if="${notificacion.tipo == 'SOLICITUD_RECHAZADA'}" class="badge bg-danger ms-2">
+                                        <span th:if="${notificacion.tipo == 'SOLICITUD_RECHAZADA'}"
+                                            class="badge bg-danger ms-2">
                                             <i class="bi bi-x-circle me-1"></i>Rechazada
                                         </span>
-                                        
+
                                         <!-- Badge especial para aceptada -->
-                                        <span th:if="${notificacion.tipo == 'SOLICITUD_ACEPTADA'}" class="badge bg-success ms-2">
+                                        <span th:if="${notificacion.tipo == 'SOLICITUD_ACEPTADA'}"
+                                            class="badge bg-success ms-2">
                                             <i class="bi bi-check-circle me-1"></i>Aceptada
                                         </span>
                                     </div>
 
                                     <!-- Acciones para solicitudes de unión -->
                                     <div th:if="${notificacion.tipo == 'SOLICITUD_UNION'}">
-                                        
+
                                         <!-- Solo mostrar acciones si tenemos datos completos y no está leída -->
-                                        <div th:if="${notificacion.grupo != null and notificacion.solicitante != null and !notificacion.leido}">
+                                        <div
+                                            th:if="${notificacion.grupo != null and notificacion.solicitante != null and !notificacion.leido}">
                                             <div class="notification-actions">
-                                                <form th:action="@{/notificaciones/responder-solicitud}" method="post" style="display: inline;">
-                                                    <input type="hidden" name="idNotificacion" th:value="${notificacion.idNotificacion}">
-                                                    <input type="hidden" name="idGrupo" th:value="${notificacion.grupo.idGrupo}">
-                                                    <input type="hidden" name="idSolicitante" th:value="${notificacion.solicitante.idUsuario}">
+                                                <form th:action="@{/notificaciones/responder-solicitud}" method="post"
+                                                    style="display: inline;">
+                                                    <input type="hidden" name="idNotificacion"
+                                                        th:value="${notificacion.idNotificacion}">
+                                                    <input type="hidden" name="idGrupo"
+                                                        th:value="${notificacion.grupo.idGrupo}">
+                                                    <input type="hidden" name="idSolicitante"
+                                                        th:value="${notificacion.solicitante.idUsuario}">
                                                     <input type="hidden" name="accion" value="aceptar">
                                                     <button type="submit" class="btn btn-success btn-sm">
                                                         <i class="bi bi-check-circle me-1"></i>Aceptar
                                                     </button>
                                                 </form>
-                                                
-                                                <form th:action="@{/notificaciones/responder-solicitud}" method="post" style="display: inline;">
-                                                    <input type="hidden" name="idNotificacion" th:value="${notificacion.idNotificacion}">
-                                                    <input type="hidden" name="idGrupo" th:value="${notificacion.grupo.idGrupo}">
-                                                    <input type="hidden" name="idSolicitante" th:value="${notificacion.solicitante.idUsuario}">
+
+                                                <form th:action="@{/notificaciones/responder-solicitud}" method="post"
+                                                    style="display: inline;">
+                                                    <input type="hidden" name="idNotificacion"
+                                                        th:value="${notificacion.idNotificacion}">
+                                                    <input type="hidden" name="idGrupo"
+                                                        th:value="${notificacion.grupo.idGrupo}">
+                                                    <input type="hidden" name="idSolicitante"
+                                                        th:value="${notificacion.solicitante.idUsuario}">
                                                     <input type="hidden" name="accion" value="rechazar">
                                                     <button type="submit" class="btn btn-outline-danger btn-sm">
                                                         <i class="bi bi-x-circle me-1"></i>Rechazar
                                                     </button>
                                                 </form>
-                                                
-                                                <button type="button" class="btn btn-outline-info btn-sm" 
-                                                        data-bs-toggle="modal" 
-                                                        data-bs-target="#verPerfilModal">
-                                                    <i class="bi bi-eye me-1"></i>Ver perfil
-                                                </button>
+
+                                                <a class="btn btn-info btn-sm"
+                                                    th:href="@{/perfil/{id}(id=${usuarioId})}">
+                                                    <i class="bi bi-person me-2"></i>Ver perfil
+                                                </a>
                                             </div>
                                         </div>
-                                        
+
                                         <!-- Mensaje cuando la solicitud ya fue procesada -->
                                         <div th:if="${notificacion.leido}" class="mt-2">
                                             <small class="text-muted">
                                                 <i class="bi bi-info-circle me-1"></i>Esta solicitud ya fue procesada
                                             </small>
                                         </div>
-                                        
+
                                         <!-- Mensaje de error si faltan datos -->
-                                        <div th:if="${notificacion.grupo == null or notificacion.solicitante == null}" 
-                                             class="alert alert-warning mt-2">
+                                        <div th:if="${notificacion.grupo == null or notificacion.solicitante == null}"
+                                            class="alert alert-warning mt-2">
                                             <i class="bi bi-exclamation-triangle me-1"></i>
                                             Datos de la solicitud incompletos. No se pueden mostrar las acciones.
                                         </div>
                                     </div>
 
                                     <!-- Acciones para notificaciones de rechazo -->
-                                    <div th:if="${notificacion.tipo == 'SOLICITUD_RECHAZADA' and !notificacion.leido}" class="mt-3">
+                                    <div th:if="${notificacion.tipo == 'SOLICITUD_RECHAZADA' and !notificacion.leido}"
+                                        class="mt-3">
                                         <div class="d-flex flex-wrap gap-2">
-                                            <button type="button" class="btn btn-outline-primary btn-sm volver-intentar-btn"
-                                                    th:data-grupo-nombre="${notificacion.contenido}"
-                                                    th:data-notification-id="${notificacion.idNotificacion}">
+                                            <button type="button"
+                                                class="btn btn-outline-primary btn-sm volver-intentar-btn"
+                                                th:data-grupo-nombre="${notificacion.contenido}"
+                                                th:data-notification-id="${notificacion.idNotificacion}">
                                                 <i class="bi bi-arrow-clockwise me-1"></i>Volver a intentar
                                             </button>
                                             <button type="button" class="btn btn-outline-secondary btn-sm marcar-leida"
-                                                    th:data-notification-id="${notificacion.idNotificacion}">
+                                                th:data-notification-id="${notificacion.idNotificacion}">
                                                 <i class="bi bi-x me-1"></i>Cerrar
                                             </button>
                                         </div>
                                     </div>
 
                                     <!-- Botón para marcar como leída (otras notificaciones) -->
-                                    <div th:if="${!notificacion.leido and notificacion.tipo != 'SOLICITUD_RECHAZADA' and notificacion.tipo != 'SOLICITUD_UNION'}" class="mt-2">
-                                        <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none marcar-leida"
-                                                th:data-notification-id="${notificacion.idNotificacion}">
+                                    <div th:if="${!notificacion.leido and notificacion.tipo != 'SOLICITUD_RECHAZADA' and notificacion.tipo != 'SOLICITUD_UNION'}"
+                                        class="mt-2">
+                                        <button type="button"
+                                            class="btn btn-link btn-sm p-0 text-decoration-none marcar-leida"
+                                            th:data-notification-id="${notificacion.idNotificacion}">
                                             <i class="bi bi-check me-1"></i>Marcar como leída
                                         </button>
                                     </div>
@@ -205,8 +228,7 @@
                 </div>
 
                 <!-- Estado vacío -->
-                <div th:if="${notificaciones == null or notificaciones.isEmpty()}" 
-                     class="text-center py-5">
+                <div th:if="${notificaciones == null or notificaciones.isEmpty()}" class="text-center py-5">
                     <i class="bi bi-bell-slash text-muted" style="font-size: 4rem;"></i>
                     <h3 class="text-muted mt-3">No tienes notificaciones</h3>
                     <p class="text-muted">Cuando recibas notificaciones, aparecerán aquí.</p>
@@ -217,38 +239,19 @@
             </div>
         </div>
     </main>
-
-    <!-- Modal para ver perfil -->
-    <div class="modal fade" id="verPerfilModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Perfil del usuario</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="text-center">
-                        <h5>Información del usuario</h5>
-                        <p class="text-muted">Perfil del solicitante</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <footer th:replace="~{fragments/footer :: footer}"></footer>
-    
+
     <!-- Scripts de Bootstrap y WebSocket en el orden correcto -->
     <th:block th:replace="~{fragments/head :: scripts}"></th:block>
-    
+
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             // Configurar WebSocket para notificaciones en tiempo real
             setupWebSocketNotifications();
-            
+
             // Marcar notificación individual como leída
             document.querySelectorAll('.marcar-leida').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     const notificationId = this.dataset.notificationId;
                     fetch(`/notificaciones/${notificationId}/marcar-leida`, {
                         method: 'POST',
@@ -256,37 +259,37 @@
                             'Content-Type': 'application/json',
                         }
                     })
-                    .then(response => response.text())
-                    .then(data => {
-                        location.reload();
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error al marcar la notificación como leída');
-                    });
+                        .then(response => response.text())
+                        .then(data => {
+                            location.reload();
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Error al marcar la notificación como leída');
+                        });
                 });
             });
 
             // Marcar todas las notificaciones como leídas
-            document.getElementById('marcarTodasLeidas').addEventListener('click', function() {
+            document.getElementById('marcarTodasLeidas').addEventListener('click', function () {
                 fetch('/notificaciones/marcar-todas-leidas', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     }
                 })
-                .then(response => response.text())
-                .then(data => {
-                    location.reload();
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('Error al marcar las notificaciones como leídas');
-                });
+                    .then(response => response.text())
+                    .then(data => {
+                        location.reload();
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('Error al marcar las notificaciones como leídas');
+                    });
             });
 
             // Limpiar todas las notificaciones
-            document.getElementById('limpiarTodasNotificaciones').addEventListener('click', function() {
+            document.getElementById('limpiarTodasNotificaciones').addEventListener('click', function () {
                 if (confirm('¿Estás seguro de que quieres eliminar todas las notificaciones? Esta acción no se puede deshacer.')) {
                     fetch('/notificaciones/limpiar-todas', {
                         method: 'POST',
@@ -294,29 +297,29 @@
                             'Content-Type': 'application/json',
                         }
                     })
-                    .then(response => response.text())
-                    .then(data => {
-                        location.reload();
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('Error al eliminar las notificaciones');
-                    });
+                        .then(response => response.text())
+                        .then(data => {
+                            location.reload();
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('Error al eliminar las notificaciones');
+                        });
                 }
             });
 
             // Volver a intentar unirse al grupo
             document.querySelectorAll('.volver-intentar-btn').forEach(button => {
-                button.addEventListener('click', function() {
+                button.addEventListener('click', function () {
                     const grupoNombre = this.dataset.grupoNombre;
                     const notificationId = this.dataset.notificationId;
-                    
+
                     if (confirm('¿Estás seguro de que quieres volver a solicitar unirte a este grupo?')) {
                         // Extraer el nombre del grupo del contenido de la notificación
                         const regex = /grupo\s+"([^"]+)"/;
                         const match = grupoNombre.match(regex);
                         const nombreGrupo = match ? match[1] : '';
-                        
+
                         if (nombreGrupo) {
                             // Redirigir a la página de búsqueda de grupos
                             alert('Te redirigiremos a la página de grupos para que puedas encontrar "' + nombreGrupo + '" y volver a solicitar unirte.');
@@ -325,7 +328,7 @@
                             alert('No se pudo determinar el grupo. Por favor, ve a la página de grupos y busca el grupo manualmente.');
                             window.location.href = '/grupos';
                         }
-                        
+
                         // Marcar la notificación como leída
                         fetch(`/notificaciones/${notificationId}/marcar-leida`, {
                             method: 'POST',
@@ -336,7 +339,7 @@
                     }
                 });
             });
-            
+
         });
 
         // Configurar WebSocket para notificaciones en tiempo real
@@ -344,23 +347,23 @@
             // Obtener el ID del usuario desde el modelo Thymeleaf
             const usuarioIdElement = document.querySelector('[data-usuario-id]');
             if (!usuarioIdElement) return;
-            
+
             const usuarioId = usuarioIdElement.getAttribute('data-usuario-id');
             if (!usuarioId || usuarioId === '') return;
-            
+
             const socket = new SockJS('/ws');
             const stompClient = Stomp.over(socket);
-            
+
             stompClient.connect({}, function (frame) {
                 console.log('Connected to notifications WebSocket: ' + frame);
-                
+
                 // Suscribirse al canal de notificaciones del usuario
                 stompClient.subscribe('/queue/notificaciones/' + usuarioId, function (message) {
                     const nuevaNotificacion = JSON.parse(message.body);
-                    
+
                     // Mostrar notificación visual
                     mostrarNotificacionTemporal(nuevaNotificacion);
-                    
+
                     // Actualizar la página de notificaciones si está activa
                     if (window.location.pathname === '/notificaciones') {
                         setTimeout(() => {
@@ -372,16 +375,16 @@
                 console.log('WebSocket notifications connection error: ' + error);
             });
         }
-        
+
         // Mostrar notificación temporal en la parte superior
         function mostrarNotificacionTemporal(notificacion) {
             const notificationDiv = document.createElement('div');
             notificationDiv.className = 'alert alert-info alert-dismissible fade show position-fixed';
             notificationDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
-            
+
             let iconClass = 'bi-bell';
             let bgClass = 'alert-info';
-            
+
             if (notificacion.tipo === 'SOLICITUD_ACEPTADA') {
                 iconClass = 'bi-check-circle';
                 bgClass = 'alert-success';
@@ -389,7 +392,7 @@
                 iconClass = 'bi-x-circle';
                 bgClass = 'alert-warning';
             }
-            
+
             notificationDiv.className = `alert ${bgClass} alert-dismissible fade show position-fixed`;
             notificationDiv.innerHTML = `
                 <i class="bi ${iconClass} me-2"></i>
@@ -397,9 +400,9 @@
                 <br>${notificacion.contenido}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             `;
-            
+
             document.body.appendChild(notificationDiv);
-            
+
             // Auto-remover después de 5 segundos
             setTimeout(() => {
                 if (notificationDiv.parentNode) {
@@ -410,4 +413,4 @@
     </script>
 </body>
 
-</html> 
+</html>
