@@ -160,6 +160,15 @@ public class PerfilController {
         usuarioHelper.cargarUsuarioParaPerfil(model);
         model.addAttribute("mensaje", "Perfil actualizado correctamente");
 
+        // Recargar datos de reseñas y logros igual que en el GET
+        org.springframework.security.core.Authentication auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !auth.getName().equals("anonymousUser")) {
+            Usuario usuario = usuarioRepository.findByEmail(auth.getName()).orElse(null);
+            if (usuario != null) {
+                cargarDatosResenasParaPerfil(usuario, model);
+            }
+        }
+
         return "user/configuracion";
     }
     
