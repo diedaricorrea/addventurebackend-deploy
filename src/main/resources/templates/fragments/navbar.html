@@ -60,12 +60,12 @@
                             id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
                             <div class="avatar-circle bg-light text-primary fw-bold me-2">
                                 <!-- Imagen actual perfil si existe -->
-                                <img id="profile-current-img" th:if="${usuario.imagenPerfil != null}"
-                                    th:src="@{/uploads/{img}(img=${usuario.imagenPerfil})}" alt="Perfil actual">
+                                <img id="profile-current-img" th:if="${fotoNavbar.imagenPerfil != null}"
+                                    th:src="@{/uploads/{img}(img=${fotoNavbar.imagenPerfil})}" alt="Perfil actual">
 
                                 <!-- Iniciales si no hay imagen -->
                                 <span id="avatar-initials" class="fs-3 fw-medium"
-                                    th:if="${usuario.imagenPerfil == null}" th:text="${iniciales}">MR</span>
+                                    th:if="${fotoNavbar.imagenPerfil == null}" th:text="${iniciales}">MR</span>
                             </div>
 
                             <div class="d-none d-md-block text-start">

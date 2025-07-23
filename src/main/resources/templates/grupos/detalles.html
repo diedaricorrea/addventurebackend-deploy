@@ -267,7 +267,7 @@
 
                                                 <!-- Dropdown para gestión de miembros -->
                                                 <div class="dropdown position-absolute top-0 end-0 me-2 mt-2"
-                                                    th:if="${@permisos.puedeGestionar(grupo.idGrupo, participante.usuario.idUsuario) && grupo.estado == 'activo'}">
+                                                    th:if="${@permisos.puedeGestionar(grupo.idGrupo, participante.usuario.idUsuario)}">
                                                     <button class="btn btn-sm btn-light border-0" type="button"
                                                         data-bs-toggle="dropdown" aria-expanded="false">
                                                         <i class="bi bi-three-dots-vertical"></i>
@@ -276,7 +276,7 @@
                                                         <li><a class="dropdown-item"
                                                                 th:href="@{/perfil/{id}(id=${participante.usuario.idUsuario})}">
                                                                 <i class="bi bi-person me-2"></i>Ver perfil</a></li>
-                                                        <li th:if="${@permisos.puedeAsignarRoles(grupo.idGrupo)}">
+                                                        <li th:if="${@permisos.puedeAsignarRoles(grupo.idGrupo) && grupo.estado == 'activo'}">
                                                             <a class="dropdown-item" href="#" data-bs-toggle="modal"
                                                                 data-bs-target="#assignRoleModal"
                                                                 th:data-user-id="${participante.usuario.idUsuario}"
@@ -284,7 +284,7 @@
                                                                 <i class="bi bi-person-gear me-2"></i>Asignar rol
                                                             </a>
                                                         </li>
-                                                        <li th:if="${@permisos.puedeExpulsarMiembros(grupo.idGrupo)}">
+                                                        <li th:if="${@permisos.puedeExpulsarMiembros(grupo.idGrupo) && grupo.estado == 'activo'}">
                                                             <a class="dropdown-item text-danger" href="#"
                                                                 data-bs-toggle="modal"
                                                                 data-bs-target="#expelMemberModal"

@@ -42,6 +42,7 @@ public class UsuarioAutenticadoHelper {
                 PerfilUsuarioDTO usuarioPerfil = usuarioService.buscarPerfilPorEmail(correo);
                 if (usuarioPerfil != null) {
                     model.addAttribute("usuario", usuarioPerfil);
+                    model.addAttribute("fotoNavbar", usuarioPerfil);
                 }
 
                 // Cargar número de notificaciones no leídas
