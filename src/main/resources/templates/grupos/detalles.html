@@ -175,12 +175,14 @@
                                         <!-- Organizador -->
                                         <div class="col">
                                             <div class="member-card text-center position-relative h-100">
-                                                <div class="avatar-large bg-primary text-white mx-auto mb-2"
-                                                    th:text="${#strings.substring(grupo.creador.nombreUsuario, 0, 2)}">
-                                                    OR</div>
-                                                <div class="fw-medium"
-                                                    th:text="${grupo.creador.nombre + ' ' + grupo.creador.apellidos}">
-                                                    Nombre Organizador</div>
+                                                <div class="avatar-det bg-primary text-white mx-auto mb-2">
+                                                    <img th:if="${grupo.creador.fotoPerfil != null}"
+                                                         th:src="@{/uploads/{img}(img=${grupo.creador.fotoPerfil})}"
+                                                         alt="Imagen de perfil"/>
+                                                    <div class="avatar-content" th:if="${grupo.creador.fotoPerfil == null}"
+                                                         th:text="${grupo.creador.iniciales}">OR</div>
+                                                </div>
+                                                <div class="fw-medium" th:text="${grupo.creador.nombre + ' ' + grupo.creador.apellidos}">Nombre Organizador</div>
                                                 <div class="organizer-label">Organizador</div>
                                                 <!-- Mostrar rol descriptivo del creador si existe -->
                                                 <div th:if="${creadorRolDescriptivo != null && creadorRolDescriptivo != 'MIEMBRO'}" 
@@ -209,18 +211,18 @@
                                         <div class="col" th:each="participante : ${participantesAceptadosList}"
                                             th:if="${participante.usuario.idUsuario != grupo.creador.idUsuario}">
                                             <div class="member-card text-center position-relative h-100">
-                                                <div
-                                                    class="avatar-large bg-secondary text-dark mx-auto mb-2 position-relative">
-                                                    <span
-                                                        th:text="${#strings.substring(participante.usuario.nombreUsuario, 0, 2)}">XX</span>
+                                                <div class="avatar-det bg-secondary text-dark mx-auto mb-2 position-relative">
+                                                    <img th:if="${participante.usuario.fotoPerfil != null}"
+                                                         th:src="@{/uploads/{img}(img=${participante.usuario.fotoPerfil})}"
+                                                         alt="Imagen de perfil"/>
+                                                    <div class="avatar-content" th:if="${participante.usuario.fotoPerfil == null}"
+                                                         th:text="${participante.usuario.iniciales}">XX</div>
                                                     <span th:if="${participante.usuario.esVerificado}"
-                                                        class="position-absolute top-0 end-0 translate-middle badge bg-success rounded-circle p-1">
+                                                          class="verificado-badge">
                                                         <i class="bi bi-check-circle-fill fs-6"></i>
                                                     </span>
                                                 </div>
-                                                <div class="fw-medium"
-                                                    th:text="${participante.usuario.nombre + ' ' + participante.usuario.apellidos}">
-                                                    Nombre Participante</div>
+                                                <div class="fw-medium" th:text="${participante.usuario.nombre + ' ' + participante.usuario.apellidos}">Nombre Participante</div>
                                                 <!-- Mostrar rol descriptivo si existe -->
                                                 <div th:if="${participante.rolParticipante != null && participante.rolParticipante != 'MIEMBRO'}" 
                                                      class="mt-1">

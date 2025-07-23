@@ -36,6 +36,51 @@ body {
     top: 0;
     left: 0;
 }
+
+.avatar-det {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 600;
+    border: 2px solid white;
+    position: relative;
+    overflow: hidden;
+}
+
+.avatar-det img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+}
+
+.avatar-content {
+    position: relative; /* añade posición para que z-index funcione */
+    z-index: 2; /* encima de la imagen */
+}
+
+.verificado-badge {
+    position: absolute;
+    top: 2px; /* más dentro del círculo */
+    right: 2px;
+    background-color: #28a745;
+    color: white;
+    border-radius: 50%;
+    padding: 2px;
+    font-size: 0.8rem;
+    z-index: 3; /* encima de todo */
+}
+
+
+
 .avatar-group {
     display: flex;
 }
