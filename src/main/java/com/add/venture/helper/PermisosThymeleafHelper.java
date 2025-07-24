@@ -113,6 +113,7 @@ public class PermisosThymeleafHelper {
             return false;
         }
     }
+    
 
     /**
      * Obtiene el rol del usuario actual en un grupo

@@ -100,6 +100,7 @@ public class PermisosServiceImpl implements IPermisosService {
         
         return nivelGestor != null && nivelObjetivo != null && nivelGestor < nivelObjetivo;
     }
+    
 
     @Override
     public UsuarioRolGrupo asignarRolEnGrupo(Usuario usuario, GrupoViaje grupo, Rol rol, Usuario asignadoPor) {

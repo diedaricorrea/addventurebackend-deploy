@@ -149,7 +149,7 @@
                                         <span class="fw-medium">Participantes:</span>
                                         <span th:text="${grupo.participantes.size() + 1}"></span> de <span
                                             th:text="${grupo.maxParticipantes}"></span>
-                                        <span>•</span> 
+                                        <span>•</span>
                                         <span class="fw-medium">Edad:</span>
                                         <span th:if="${grupo.viaje != null}">
                                             <span
@@ -167,16 +167,24 @@
                                 </p>
 
                                 <div class="d-flex mb-3"
-                                    th:if="${grupo.participantes != null && !grupo.participantes.isEmpty()}">
+                                    >
                                     <div class="avatar-group">
                                         <div class="avatar-circle bg-primary text-white">
-                                            <span th:text="${grupo.creador.iniciales}">CR</span>
+                                            <img th:if="${grupo.creador.fotoPerfil != null}"
+                                                th:src="@{/uploads/{img}(img=${grupo.creador.fotoPerfil})}"
+                                                alt="Imagen de perfil" />
+                                            <div class="avatar-content" th:if="${grupo.creador.fotoPerfil == null}"
+                                                th:text="${grupo.creador.iniciales}">OR</div>
                                         </div>
                                         <!-- Mostrar hasta 3 participantes más -->
                                         <th:block th:each="participante, iterStat : ${grupo.participantes}"
                                             th:if="${iterStat.index < 3 && participante.usuario != grupo.creador}">
                                             <div class="avatar-circle bg-light">
-                                                <span th:text="${participante.usuario.iniciales}">U1</span>
+                                                <img th:if="${participante.usuario.fotoPerfil != null}"
+                                                    th:src="@{/uploads/{img}(img=${participante.usuario.fotoPerfil})}"
+                                                    alt="Imagen de perfil" />
+                                                <div class="avatar-circle" th:if="${participante.usuario.fotoPerfil == null}"
+                                                    th:text="${participante.usuario.iniciales}">XX</div>
                                             </div>
                                         </th:block>
                                         <!-- Mostrar +X si hay más participantes -->
@@ -238,7 +246,7 @@
 
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
+
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
@@ -311,7 +319,7 @@
             const urlParams = new URLSearchParams(window.location.search);
             const mensaje = urlParams.get('mensaje');
             const tipoMensaje = urlParams.get('tipoMensaje');
-            
+
             if (mensaje && tipoMensaje === 'success') {
                 Swal.fire({
                     icon: 'success',
