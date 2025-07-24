@@ -60,20 +60,30 @@
                         <div class="tab-pane fade show active" id="quick-search" role="tabpanel">
                             <form th:action="@{/grupos}" method="get">
                                 <div class="row g-3 mb-4">
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="destino" class="form-label">¿A dónde quieres ir?</label>
                                         <input type="text" class="form-control form-control-lg" id="destino"
-                                            name="destino" placeholder="Ej: Cusco, Perú">
+                                            name="destinoPrincipal" placeholder="Ej: Piura">
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="fechaInicio" class="form-label">Fecha de inicio</label>
                                         <input type="date" class="form-control form-control-lg" id="fechaInicio"
-                                            name="fechaInicio">
+                                            name="fechaInicio" th:attr="min=${#dates.format(#dates.createNow(), 'yyyy-MM-dd')}">
                                     </div>
-                                    <div class="col-md-4">
+                                    <div class="col-md-3">
                                         <label for="fechaFin" class="form-label">Fecha de fin</label>
                                         <input type="date" class="form-control form-control-lg" id="fechaFin"
-                                            name="fechaFin">
+                                            name="fechaFin" th:attr="min=${#dates.format(#dates.createNow(), 'yyyy-MM-dd')}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label for="ordenar" class="form-label">Ordenar</label>
+                                        <select name="sort" id="ordenar" class="form-select form-select-lg" onchange="this.form.submit()">
+                                            <option value="">Seleccionar</option>
+                                            <option value="destinoPrincipal" th:selected="${sort == 'destinoPrincipal'}">
+                                                Destino</option>
+                                            <option value="fechaInicio" th:selected="${sort == 'fechaInicio'}">Más próximos
+                                            </option>
+                                        </select>
                                     </div>
                                 </div>
                                 <div class="text-center">
@@ -82,6 +92,9 @@
                                     </button>
                                 </div>
                             </form>
+                            <div th:if="${error}" class="alert alert-danger text-center">
+                                <span th:text="${error}"></span>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -97,13 +110,13 @@
                             búsqueda
                         </p>
                     </div>
-                    <div>
+                    <!-- <div>
                         <select class="form-select" name="ordenar">
                             <option selected value="fecha">Ordenar por</option>
                             <option value="fecha">Fecha (más cercana)</option>
                             <option value="recientes">Más recientes</option>
                         </select>
-                    </div>
+                    </div> -->
                 </div>
 
                 <div class="row g-4">
@@ -218,19 +231,29 @@
                 </div>
 
                 <!-- Paginación -->
-                <div class="d-flex justify-content-center mt-5" th:if="${grupos != null && grupos.size() > 0}">
+                <div class="d-flex justify-content-center mt-5" th:if="${totalPages > 1}">
                     <nav aria-label="Paginación de resultados">
                         <ul class="pagination">
-                            <li class="page-item">
-                                <a class="page-link" href="#" aria-label="Anterior">
+                            <!--Botón anterior-->
+                            <li class="page-item" th:classappend="${currentPage == 0} ? 'disabled'">
+                                <a class="page-link"
+                                    th:href="@{/grupos(destinoPrincipal=${param.destinoPrincipal}, fechaInicio=${param.fechaInicio}, fechaFin=${param.fechaFin}, sort=${sort}, page=${currentPage - 1}, size=${size})}"
+                                    aria-label="Anterior">
                                     <span aria-hidden="true"><i class="bi bi-chevron-left"></i></span>
                                 </a>
                             </li>
-                            <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                            <li class="page-item"><a class="page-link" href="#">2</a></li>
-                            <li class="page-item"><a class="page-link" href="#">3</a></li>
-                            <li class="page-item">
-                                <a class="page-link" href="#" aria-label="Siguiente">
+                            <!--Números de paginas-->
+                            <li class="page-item" th:each="i : ${#numbers.sequence(0, totalPages - 1)}"
+                                th:classappend="${i == currentPage} ? 'active'">
+                                <a class="page-link"
+                                    th:href="@{/grupos(destinoPrincipal=${param.destinoPrincipal}, fechaInicio=${param.fechaInicio}, fechaFin=${param.fechaFin}, sort=${sort}, page=${i}, size=${size})}"
+                                    th:text="${i+1}">1</a>
+                            </li>
+                            <!--Botón siguiente-->
+                            <li class="page-item" th:classappend="${currentPage + 1 >= totalPages} ? 'disabled'">
+                                <a class="page-link"
+                                    th:href="@{/grupos(destinoPrincipal=${param.destinoPrincipal}, fechaInicio=${param.fechaInicio}, fechaFin=${param.fechaFin}, sort=${sort}, page=${currentPage + 1}, size=${size})}"
+                                    aria-label="Anterior">
                                     <span aria-hidden="true"><i class="bi bi-chevron-right"></i></span>
                                 </a>
                             </li>

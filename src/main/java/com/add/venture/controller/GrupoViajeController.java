@@ -8,7 +8,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -18,6 +20,12 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -58,6 +66,7 @@ import com.add.venture.repository.UsuarioRepository;
 import com.add.venture.repository.UsuarioRolGrupoRepository;
 import com.add.venture.repository.ViajeRepository;
 import com.add.venture.repository.ItinerarioRepository;
+import com.add.venture.service.IBuscarGrupoService;
 import com.add.venture.service.IGrupoViajeService;
 import com.add.venture.service.INotificacionService;
 import com.add.venture.service.IPermisosService;
@@ -104,7 +113,92 @@ public class GrupoViajeController {
     @Autowired
     private ItinerarioRepository itinerarioRepository;
 
+    @Autowired
+    private IBuscarGrupoService iBuscarGrupoService;
+
     @GetMapping
+    public String mostrarGrupos(
+            @RequestParam(required = false) String destinoPrincipal,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaInicio,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaFin,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "6") int size,
+            @RequestParam(required = false) String sort,
+            Model model) {
+
+        // Cargar datos del usuario
+        usuarioAutenticadoHelper.cargarDatosUsuarioParaNavbar(model);
+        usuarioAutenticadoHelper.cargarUsuarioParaPerfil(model);
+
+        // Validación de campos
+        if (destinoPrincipal != null && !destinoPrincipal.isBlank() && !destinoPrincipal.matches("^[A-Za-zÁÉÍÓÚáéíóúÑñ\\s]+$")) {
+            model.addAttribute("error", "Se deben ingresar letras");
+            model.addAttribute("grupos", List.of());
+            return "grupos/buscar";
+        }
+
+        LocalDate hoy = LocalDate.now();
+        if ((fechaInicio != null && fechaInicio.isBefore(hoy)) || (fechaFin != null && fechaFin.isBefore(hoy))) {
+            model.addAttribute("error", "Fecha inválida");
+            model.addAttribute("grupos", List.of());
+            return "grupos/buscar";
+        }
+
+        /*Pageable pageable = (sort != null && !sort.isBlank())
+            ? PageRequest.of(page, size, Sort.by(sort).ascending())
+            : PageRequest.of(page, size);*/
+        
+        Pageable pageable;
+        if ("destinoPrincipal".equals(sort)) {
+            // Ordenar por destinoPrincipal en la entidad Viaje
+            pageable = PageRequest.of(page, size, Sort.by("viaje.destinoPrincipal").ascending());
+        } else if ("fechaInicio".equals(sort)) {
+            // Ordenar por fechaInicio en la entidad Viaje
+            pageable = PageRequest.of(page, size, Sort.by("viaje.fechaInicio").ascending());
+        } else if (sort != null && !sort.isBlank()) {
+            // Si hay otro valor para sort, usarlo directamente
+            pageable = PageRequest.of(page, size, Sort.by(sort).ascending());
+        } else {
+            // Si no hay orden, solo paginación
+            pageable = PageRequest.of(page, size);
+        }
+
+        // Obtener grupos filtrados por destino/fechas (si los hay)
+        Page<GrupoViaje> paginaFiltrada;
+        if ((destinoPrincipal == null || destinoPrincipal.isBlank()) && fechaInicio == null && fechaFin == null) {
+            paginaFiltrada = iBuscarGrupoService.obtenerGrupos(pageable);
+        } else {
+            paginaFiltrada = iBuscarGrupoService.buscarGrupos(destinoPrincipal, fechaInicio, fechaFin, pageable);
+        }
+
+        //Filtrar grupos con cupo
+        List<GrupoViaje> gruposConCupo = paginaFiltrada.getContent().stream()
+                .filter(grupo -> {
+                    long aceptados = participanteGrupoRepository.countByGrupoAndEstadoSolicitud(grupo,
+                            EstadoSolicitud.ACEPTADO);
+                    return (aceptados + 1) < grupo.getMaxParticipantes();
+                })
+                .peek(grupo -> {
+                    List<ParticipanteGrupo> aceptados = participanteGrupoRepository.findByGrupoAndEstadoSolicitud(grupo,
+                            EstadoSolicitud.ACEPTADO);
+                    grupo.setParticipantes(new HashSet<>(aceptados));
+                })
+                .toList();
+        
+        // Crear una Page "manual"
+        Page<GrupoViaje> paginaConCupo = new PageImpl<>(gruposConCupo, pageable, paginaFiltrada.getTotalElements());
+
+        // Agregar al modelo
+        model.addAttribute("grupos", paginaConCupo.getContent());
+        model.addAttribute("totalPages", paginaConCupo.getTotalPages());
+        model.addAttribute("currentPage", page);
+        model.addAttribute("size", size);
+        model.addAttribute("sort", sort);
+
+        return "grupos/buscar";
+    }
+
+    /*@GetMapping
     public String listarGrupos(
             @RequestParam(required = false) String destino,
             @RequestParam(required = false) String fechaInicio,
@@ -145,7 +239,7 @@ public class GrupoViajeController {
         model.addAttribute("grupos", gruposConCupo);
 
         return "grupos/buscar";
-    }
+    } */
 
     @GetMapping("/{id}")
     public String verDetallesGrupo(@PathVariable("id") Long idGrupo, Model model) {

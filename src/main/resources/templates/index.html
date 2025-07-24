@@ -31,7 +31,7 @@
             <p class="lead mb-4">Encuentra personas que comparten tu pasión por explorar el mundo. Únete a grupos de
                 viaje o crea el tuyo propio.</p>
             <div class="d-flex flex-column flex-sm-row justify-content-center gap-3">
-                <a href="buscar-grupos.html" class="btn btn-primary btn-lg">Explorar Grupos</a>
+                <a th:href="@{/grupos}" class="btn btn-primary btn-lg">Explorar Grupos</a>
                 <a href="#como-funciona" class="btn btn-outline-light btn-lg">Ver Cómo Funciona</a>
             </div>
             <div class="mt-4 d-flex justify-content-center gap-3">
@@ -44,43 +44,6 @@
                 <a href="#" class="btn btn-sm text-white opacity-75 hover-opacity-100">
                     <i class="fab fa-twitter me-2"></i> Twitter
                 </a>
-            </div>
-        </div>
-    </section>
-
-    <!-- Search Section -->
-    <section class="py-5 bg-gradient-to-r from-blue-50 to-indigo-50">
-        <div class="container">
-            <div class="search-card">
-                <h2 class="h5 text-primary mb-4">Encuentra tu próxima aventura</h2>
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label small">¿A dónde quieres ir?</label>
-                        <input type="text" class="form-control form-control-lg" placeholder="Ej: Cusco, Perú">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small">Fecha de inicio</label>
-                        <input type="date" class="form-control form-control-lg">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small">Fecha de fin</label>
-                        <input type="date" class="form-control form-control-lg">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label small">Tipo de viaje</label>
-                        <select class="form-select form-select-lg">
-                            <option selected>Selecciona</option>
-                            <option value="aventura">Aventura</option>
-                            <option value="cultural">Cultural</option>
-                            <option value="playa">Playa</option>
-                            <option value="gastronomico">Gastronómico</option>
-                            <option value="relax">Relax</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="text-center mt-4">
-                    <button class="btn btn-primary btn-lg px-5">Buscar Grupos</button>
-                </div>
             </div>
         </div>
     </section>
@@ -417,7 +380,7 @@
                 Miles ya están viajando en grupo gracias a AddVenture.<br>
                 Ahora te toca a ti vivir una experiencia única.
             </p>
-            <a href="registro.html" class="btn btn-light btn-lg px-5">Empezar ahora</a>
+            <a th:href="@{/grupos}" class="btn btn-light btn-lg px-5">Empezar ahora</a>
         </div>
     </section>
 
