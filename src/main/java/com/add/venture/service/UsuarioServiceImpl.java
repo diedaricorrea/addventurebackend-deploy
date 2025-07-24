@@ -45,6 +45,7 @@ public class UsuarioServiceImpl implements IUsuarioService {
         usuario.setFechaRegistro(LocalDateTime.now());
         usuario.setEsVerificado(false);
         usuario.setEstadoCuenta("activa");
+        usuario.setEstado("activo");
         usuarioRepository.save(usuario);
     }
 

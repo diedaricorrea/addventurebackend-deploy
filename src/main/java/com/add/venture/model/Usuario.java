@@ -86,6 +86,9 @@ public class Usuario {
     @Column(name = "estado_cuenta", length = 20)
     private String estadoCuenta = "activa";
 
+    @Column(length = 20)
+    private String estado = "activo";
+
     @Column(name = "fecha_modificacion")
     private LocalDateTime fechaModificacion;
     
