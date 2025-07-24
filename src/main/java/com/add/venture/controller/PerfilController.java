@@ -83,7 +83,7 @@ public class PerfilController {
                 .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
         
         // Verificar que el usuario existe y está activo
-        if (!"activo".equals(usuarioAMostrar.getEstadoCuenta())) {
+        if (!"activa".equals(usuarioAMostrar.getEstadoCuenta())) {
             throw new RuntimeException("Usuario no disponible");
         }
         
