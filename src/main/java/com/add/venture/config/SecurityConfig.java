@@ -74,7 +74,8 @@ public class SecurityConfig {
                                 "/notificaciones/**",
                                 "/calificaciones/**",
                                 "/perfil/**",
-                                "/user/**")
+                                "/user/**"
+                                )
                         .authenticated()
                         .anyRequest().authenticated())
                 .formLogin(form -> form
