@@ -1,5 +1,7 @@
 package com.add.venture.config;
 
+import com.add.venture.security.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -7,13 +9,18 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
+@RequiredArgsConstructor
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -35,19 +42,24 @@ public class SecurityConfig {
                                 "/notificaciones/*/marcar-leida",
                                 "/notificaciones/marcar-todas-leidas",
                                 "/notificaciones/responder-solicitud",
-                                "/grupos/*/unirse")) // Ignorar CSRF para API y AJAX calls
+                                "/grupos/*/unirse"))
+                
+                // Configurar sesiones como STATELESS para JWT
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
                         // Rutas públicas (sin autenticación)
                         .requestMatchers(
                                 "/auth/**",
-                                "/api/**",
+                                "/api/auth/**", // Endpoints de autenticación JWT
+                                "/api/home", // Endpoint público de home
                                 "/support/**",
                                 "/css/**",
                                 "/js/**",
                                 "/usuarios/**",
                                 "/images/**",
-                                "/uploads/**", // Para servir imágenes del chat
+                                "/uploads/**",
                                 "/")
                         .permitAll()
                         // Rutas de grupos - públicas para ver, autenticadas para acciones
@@ -57,11 +69,12 @@ public class SecurityConfig {
                         .permitAll()
                         .requestMatchers(
                                 HttpMethod.GET, 
-                                "/grupos/*") // Ver detalles de grupo (GET público)
+                                "/grupos/*")
                         .permitAll()
-                        // Rutas que requieren autenticación
-                        // NOTA: Los permisos específicos ahora se manejan a nivel de servicio
-                        // usando el sistema de roles y permisos implementado
+                        // Rutas API protegidas que requieren JWT
+                        .requestMatchers("/api/**")
+                        .authenticated()
+                        // Rutas que requieren autenticación (form-based o JWT)
                         .requestMatchers(
                                 "/grupos/*/unirse",
                                 "/grupos/*/abandonar", 
@@ -78,15 +91,18 @@ public class SecurityConfig {
                                 )
                         .authenticated()
                         .anyRequest().authenticated())
+                
+                // Agregar filtro JWT antes del filtro de autenticación estándar
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
+                
                 .formLogin(form -> form
-                        .loginPage("/auth/login") // tu login web personalizado
-                        .loginProcessingUrl("/auth/login") // POST del formulario
+                        .loginPage("/auth/login")
+                        .loginProcessingUrl("/auth/login")
                         .defaultSuccessUrl("/", true)
                         .failureUrl("/auth/login?error=true")
                         .permitAll())
                 .logout(logout -> logout
                         .logoutUrl("/auth/logout")
-                        // .logoutSuccessUrl("/auth/login?logout=true")
                         .logoutSuccessUrl("/")
                         .permitAll());
 

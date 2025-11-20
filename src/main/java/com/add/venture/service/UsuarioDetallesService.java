@@ -16,14 +16,19 @@ public class UsuarioDetallesService implements UserDetailsService {
     private UsuarioRepository usuarioRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + email));
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        // Intentar buscar por email primero
+        Usuario usuario = usuarioRepository.findByEmail(username)
+                .orElseGet(() -> 
+                    // Si no se encuentra por email, intentar por teléfono
+                    usuarioRepository.findByTelefono(username)
+                        .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado: " + username))
+                );
 
         return new User(
                 usuario.getEmail(),
                 usuario.getContrasenaHash(),
-                List.of(new SimpleGrantedAuthority("ROLE_USER")) // Puedes cambiar o cargar el rol desde tu modelo
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
         );
     }
 }
