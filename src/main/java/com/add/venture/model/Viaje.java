@@ -3,6 +3,8 @@ package com.add.venture.model;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -70,5 +72,6 @@ public class Viaje {
     @EqualsAndHashCode.Exclude
     @ToString.Exclude
     @OneToOne(mappedBy = "viaje", cascade = CascadeType.ALL)
+    @JsonIgnore
     private GrupoViaje grupo;
 }

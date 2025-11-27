@@ -1,5 +1,7 @@
 package com.add.venture.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -47,5 +49,6 @@ public class Itinerario {
     // Relaciones
     @ManyToOne
     @JoinColumn(name = "id_grupo")
+    @JsonIgnore
     private GrupoViaje grupo;
 }

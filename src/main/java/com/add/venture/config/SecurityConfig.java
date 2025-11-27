@@ -3,6 +3,7 @@ package com.add.venture.config;
 import com.add.venture.security.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -27,6 +28,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthFilter;
 
+    @Value("${cors.allowed-origins}")
+    private String allowedOrigins;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -40,7 +44,8 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(Arrays.asList("http://localhost:4200"));
+        // Los orígenes permitidos se configuran en application.properties
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
@@ -76,27 +81,22 @@ public class SecurityConfig {
                         
                         // Rutas públicas (sin autenticación)
                         .requestMatchers(
-                                "/auth/**",
                                 "/api/auth/**", // Endpoints de autenticación JWT
-                                "/api/home", // Endpoint público de home
-                                "/support/**",
+                                "/api/home", // Endpoint público de home (lista grupos)
+                                "/api/grupos", // Endpoint público de búsqueda de grupos
+                                "/api/grupos/*/permisos", // Endpoint de permisos (necesario para botones)
+                                "/api/support/**", // Endpoints de soporte
                                 "/css/**",
                                 "/js/**",
-                                "/usuarios/**",
                                 "/images/**",
                                 "/uploads/**",
+                                "/ws/**", // Endpoint WebSocket (handshake - auth en interceptor)
                                 "/")
                         .permitAll()
-                        // Rutas de grupos - públicas para ver, autenticadas para acciones
-                        .requestMatchers(
-                                "/grupos", 
-                                "/grupos/buscar")
+                        // GET de detalle de grupo - público para ver
+                        .requestMatchers(HttpMethod.GET, "/api/grupos/*")
                         .permitAll()
-                        .requestMatchers(
-                                HttpMethod.GET, 
-                                "/grupos/*")
-                        .permitAll()
-                        // Rutas API protegidas que requieren JWT
+                        // Rutas API protegidas que requieren JWT (incluyendo chat)
                         .requestMatchers("/api/**")
                         .authenticated()
                         // Rutas que requieren autenticación (form-based o JWT)
