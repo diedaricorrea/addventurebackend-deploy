@@ -91,7 +91,8 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/uploads/**",
                                 "/ws/**", // Endpoint WebSocket (handshake - auth en interceptor)
-                                "/")
+                                "/",
+                                "/auth/**") // Permitir acceso a páginas de login/registro
                         .permitAll()
                         // GET de detalle de grupo - público para ver
                         .requestMatchers(HttpMethod.GET, "/api/grupos/*")
@@ -123,24 +124,41 @@ public class SecurityConfig {
                 // Configurar manejador de excepciones para rutas API
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint((request, response, authException) -> {
-                            // Si es una petición API, devolver 401 en vez de redirigir
-                            if (request.getRequestURI().startsWith("/api/")) {
+                            String requestUri = request.getRequestURI();
+                            // Si es una petición API o WebSocket, devolver 401 JSON sin redirección
+                            if (requestUri.startsWith("/api/") || requestUri.startsWith("/ws/")) {
                                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                                response.setContentType("application/json");
-                                response.getWriter().write("{\"error\": \"No autenticado\"}");
+                                response.setContentType("application/json;charset=UTF-8");
+                                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+                                response.getWriter().write("{\"error\": \"No autenticado\", \"message\": \"Token invalido o expirado\"}");
+                                response.getWriter().flush();
                             } else {
                                 // Para rutas web, redirigir al login
                                 response.sendRedirect("/auth/login");
                             }
                         })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            String requestUri = request.getRequestURI();
+                            if (requestUri.startsWith("/api/") || requestUri.startsWith("/ws/")) {
+                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                                response.setContentType("application/json;charset=UTF-8");
+                                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+                                response.getWriter().write("{\"error\": \"Acceso denegado\", \"message\": \"" + accessDeniedException.getMessage() + "\"}");
+                                response.getWriter().flush();
+                            } else {
+                                response.sendRedirect("/auth/login?error=forbidden");
+                            }
+                        })
                 )
                 
+                // Form login solo para rutas NO-API
                 .formLogin(form -> form
                         .loginPage("/auth/login")
                         .loginProcessingUrl("/auth/login")
                         .defaultSuccessUrl("/", true)
                         .failureUrl("/auth/login?error=true")
                         .permitAll())
+                
                 .logout(logout -> logout
                         .logoutUrl("/auth/logout")
                         .logoutSuccessUrl("/")
