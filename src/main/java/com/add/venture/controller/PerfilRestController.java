@@ -1,11 +1,19 @@
 package com.add.venture.controller;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.TextStyle;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,10 +23,17 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.add.venture.dto.ActualizarPerfilDTO;
 import com.add.venture.dto.PerfilResponseDTO;
 import com.add.venture.dto.PerfilResponseDTO.AutorResenaDTO;
 import com.add.venture.dto.PerfilResponseDTO.GrupoSimpleDTO;
@@ -306,5 +321,186 @@ public class PerfilRestController {
         }
         
         return dto;
+    }
+
+    /**
+     * Actualizar perfil del usuario autenticado (sin imágenes)
+     */
+    @PutMapping
+    public ResponseEntity<?> actualizarPerfil(@RequestBody ActualizarPerfilDTO dto) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            String username = authentication.getName();
+            Usuario usuario = usuarioRepository.findByEmail(username)
+                    .orElseGet(() -> usuarioRepository.findByTelefono(username).orElse(null));
+
+            if (usuario == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Usuario no encontrado"));
+            }
+
+            // Actualizar datos básicos
+            usuario.setNombre(dto.getNombre());
+            usuario.setApellidos(dto.getApellidos());
+
+            // Verificar si el username cambió y si está disponible
+            if (!usuario.getNombreUsuario().equals(dto.getUsername())) {
+                if (usuarioRepository.existsByNombreUsuario(dto.getUsername())) {
+                    return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                            .body(Map.of("error", "El nombre de usuario ya está en uso"));
+                }
+                usuario.setNombreUsuario(dto.getUsername());
+            }
+
+            usuario.setTelefono(dto.getTelefono());
+            usuario.setPais(dto.getPais());
+            usuario.setCiudad(dto.getCiudad());
+            usuario.setFechaNacimiento(dto.getFechaNacimiento());
+            usuario.setDescripcion(dto.getBiografia());
+
+            usuarioRepository.save(usuario);
+
+            // Devolver el perfil actualizado
+            PerfilResponseDTO perfilActualizado = construirPerfilResponse(usuario, true);
+            return ResponseEntity.ok(perfilActualizado);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al actualizar el perfil: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Subir imagen de perfil
+     */
+    @PostMapping("/imagen-perfil")
+    public ResponseEntity<?> subirImagenPerfil(@RequestParam("imagen") MultipartFile imagen) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            String username = authentication.getName();
+            Usuario usuario = usuarioRepository.findByEmail(username)
+                    .orElseGet(() -> usuarioRepository.findByTelefono(username).orElse(null));
+
+            if (usuario == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Usuario no encontrado"));
+            }
+
+            // Validar archivo
+            if (imagen.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "No se ha seleccionado ninguna imagen"));
+            }
+
+            String contentType = imagen.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "El archivo debe ser una imagen"));
+            }
+
+            // Eliminar imagen anterior si existe
+            if (usuario.getFotoPerfil() != null && !usuario.getFotoPerfil().isEmpty()) {
+                try {
+                    Path pathAntiguo = Paths.get("uploads/" + usuario.getFotoPerfil());
+                    Files.deleteIfExists(pathAntiguo);
+                } catch (Exception e) {
+                    // Ignorar errores al eliminar archivo antiguo
+                }
+            }
+
+            // Guardar nueva imagen
+            String nombreArchivo = UUID.randomUUID().toString() + "_" + imagen.getOriginalFilename();
+            Path uploadPath = Paths.get("uploads");
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            Path filePath = uploadPath.resolve(nombreArchivo);
+            Files.copy(imagen.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            usuario.setFotoPerfil(nombreArchivo);
+            usuarioRepository.save(usuario);
+
+            return ResponseEntity.ok(Map.of(
+                    "mensaje", "Imagen de perfil actualizada correctamente",
+                    "imagenUrl", nombreArchivo));
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al guardar la imagen: " + e.getMessage()));
+        }
+    }
+
+    /**
+     * Subir imagen de portada
+     */
+    @PostMapping("/imagen-portada")
+    public ResponseEntity<?> subirImagenPortada(@RequestParam("imagen") MultipartFile imagen) {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            }
+
+            String username = authentication.getName();
+            Usuario usuario = usuarioRepository.findByEmail(username)
+                    .orElseGet(() -> usuarioRepository.findByTelefono(username).orElse(null));
+
+            if (usuario == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("error", "Usuario no encontrado"));
+            }
+
+            // Validar archivo
+            if (imagen.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "No se ha seleccionado ninguna imagen"));
+            }
+
+            String contentType = imagen.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body(Map.of("error", "El archivo debe ser una imagen"));
+            }
+
+            // Eliminar imagen anterior si existe
+            if (usuario.getFotoPortada() != null && !usuario.getFotoPortada().isEmpty()) {
+                try {
+                    Path pathAntiguo = Paths.get("uploads/" + usuario.getFotoPortada());
+                    Files.deleteIfExists(pathAntiguo);
+                } catch (Exception e) {
+                    // Ignorar errores al eliminar archivo antiguo
+                }
+            }
+
+            // Guardar nueva imagen
+            String nombreArchivo = UUID.randomUUID().toString() + "_" + imagen.getOriginalFilename();
+            Path uploadPath = Paths.get("uploads");
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            Path filePath = uploadPath.resolve(nombreArchivo);
+            Files.copy(imagen.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+
+            usuario.setFotoPortada(nombreArchivo);
+            usuarioRepository.save(usuario);
+
+            return ResponseEntity.ok(Map.of(
+                    "mensaje", "Imagen de portada actualizada correctamente",
+                    "imagenUrl", nombreArchivo));
+
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error al guardar la imagen: " + e.getMessage()));
+        }
     }
 }
