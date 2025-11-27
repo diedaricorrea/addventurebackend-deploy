@@ -1,10 +1,27 @@
 package com.add.venture.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+
 public class ContactoDTO {
+    @NotBlank(message = "El nombre es obligatorio")
+    @Size(min = 2, max = 100, message = "El nombre debe tener entre 2 y 100 caracteres")
     private String nombre;
+    
+    @NotBlank(message = "El email es obligatorio")
+    @Email(message = "Debe ser un email válido")
     private String email;
+    
+    @NotBlank(message = "El asunto es obligatorio")
+    @Size(min = 3, max = 200, message = "El asunto debe tener entre 3 y 200 caracteres")
     private String asunto;
+    
+    @NotBlank(message = "La categoría es obligatoria")
     private String categoria;
+    
+    @NotBlank(message = "El mensaje es obligatorio")
+    @Size(min = 10, max = 2000, message = "El mensaje debe tener entre 10 y 2000 caracteres")
     private String mensaje;
 
     // Constructor por defecto
