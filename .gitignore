@@ -32,8 +32,14 @@ build/
 ### VS Code ###
 .vscode/
 
-# Proyecto de Spring Boot
-# Ignorar archivos de configuración de Spring Boot
-/src/main/resources/application.properties
+# Archivos de subida de usuarios
 /uploads/
+
+# Variables de entorno locales (si creas .env)
+.env
+.env.local
+
+# Logs
+*.log
+logs/
 

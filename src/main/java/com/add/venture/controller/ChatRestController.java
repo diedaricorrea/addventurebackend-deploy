@@ -186,7 +186,43 @@ public class ChatRestController {
                         .build());
             }
 
-            // Aquí iría la lógica de eliminación de mensaje
+            String email = authentication.getName();
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            MensajeGrupo mensaje = mensajeGrupoRepository.findById(idMensaje)
+                    .orElseThrow(() -> new RuntimeException("Mensaje no encontrado"));
+
+            GrupoViaje grupo = mensaje.getGrupo();
+
+            // Verificar que el mensaje pertenece al grupo indicado
+            if (!grupo.getIdGrupo().equals(idGrupo)) {
+                return ResponseEntity.status(403).body(ActionResponse.builder()
+                        .success(false)
+                        .error("El mensaje no pertenece a este grupo")
+                        .build());
+            }
+
+            // Verificar que el usuario es el creador del mensaje o tiene permiso para eliminar
+            boolean esCreadorMensaje = mensaje.getRemitente().getIdUsuario().equals(usuario.getIdUsuario());
+            boolean tienePermisoEliminar = permisosService.usuarioTienePermiso(usuario, grupo, "ELIMINAR_MENSAJES");
+
+            if (!esCreadorMensaje && !tienePermisoEliminar) {
+                return ResponseEntity.status(403).body(ActionResponse.builder()
+                        .success(false)
+                        .error("No tienes permiso para eliminar este mensaje")
+                        .build());
+            }
+
+            // Eliminar el mensaje
+            mensajeGrupoRepository.delete(mensaje);
+
+            // Notificar por WebSocket la eliminación del mensaje
+            Map<String, Object> deleteNotification = new HashMap<>();
+            deleteNotification.put("action", "delete");
+            deleteNotification.put("idMensaje", idMensaje);
+            messagingTemplate.convertAndSend("/topic/grupo/" + idGrupo + "/delete", deleteNotification);
+
             return ResponseEntity.ok(ActionResponse.builder()
                     .success(true)
                     .message("Mensaje eliminado exitosamente")

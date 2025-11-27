@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class HomeDataDTO {
+    private Long idUsuario;
     private String iniciales;
     private String username;
     private String email;

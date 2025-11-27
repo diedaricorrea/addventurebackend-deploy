@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.add.venture.dto.ActionResponse;
 import com.add.venture.dto.GrupoViajeResponseDTO;
+import com.add.venture.model.Rol;
 import com.add.venture.model.Usuario;
+import com.add.venture.model.UsuarioRolGrupo;
 import com.add.venture.model.GrupoViaje;
 import com.add.venture.model.Itinerario;
 import com.add.venture.model.ParticipanteGrupo;
@@ -32,8 +35,11 @@ import com.add.venture.model.ParticipanteGrupo.EstadoSolicitud;
 import com.add.venture.repository.GrupoViajeRepository;
 import com.add.venture.repository.ItinerarioRepository;
 import com.add.venture.repository.ParticipanteGrupoRepository;
+import com.add.venture.repository.RolRepository;
 import com.add.venture.repository.UsuarioRepository;
+import com.add.venture.repository.UsuarioRolGrupoRepository;
 import com.add.venture.service.IBuscarGrupoService;
+import com.add.venture.service.INotificacionService;
 import com.add.venture.service.IPermisosService;
 
 @RestController
@@ -56,7 +62,16 @@ public class GruposRestController {
     private UsuarioRepository usuarioRepository;
     
     @Autowired
+    private UsuarioRolGrupoRepository usuarioRolGrupoRepository;
+    
+    @Autowired
     private IPermisosService permisosService;
+    
+    @Autowired
+    private INotificacionService notificacionService;
+    
+    @Autowired
+    private RolRepository rolRepository;
 
     @GetMapping
     public ResponseEntity<Map<String, Object>> buscarGrupos(
@@ -137,6 +152,57 @@ public class GruposRestController {
             errorResponse.put("error", "Error al buscar grupos: " + e.getMessage());
             errorResponse.put("grupos", List.of());
             return ResponseEntity.internalServerError().body(errorResponse);
+        }
+    }
+
+    @GetMapping("/{id}/solicitudes-pendientes")
+    public ResponseEntity<?> obtenerSolicitudesPendientes(@PathVariable("id") Long idGrupo, Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(401).body(Map.of("error", "Debes iniciar sesión"));
+            }
+            
+            // Obtener usuario autenticado
+            String email = authentication.getName();
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            // Buscar el grupo
+            GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
+                    .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+            
+            // Validar que el usuario es el líder del grupo
+            if (!grupo.getCreador().getIdUsuario().equals(usuario.getIdUsuario())) {
+                return ResponseEntity.status(403).body(Map.of("error", "No tienes permisos para ver las solicitudes de este grupo"));
+            }
+            
+            // Obtener solicitudes pendientes
+            List<ParticipanteGrupo> solicitudesPendientes = participanteGrupoRepository
+                    .findByGrupoAndEstadoSolicitud(grupo, EstadoSolicitud.PENDIENTE);
+            
+            // Convertir a DTO con información del solicitante
+            List<Map<String, Object>> solicitudesDTO = solicitudesPendientes.stream()
+                    .map(solicitud -> {
+                        Usuario solicitante = solicitud.getUsuario();
+                        Map<String, Object> dto = new HashMap<>();
+                        dto.put("idUsuario", solicitante.getIdUsuario());
+                        dto.put("nombreCompleto", solicitante.getNombre() + " " + solicitante.getApellidos());
+                        dto.put("email", solicitante.getEmail());
+                        dto.put("fotoPerfil", solicitante.getFotoPerfil());
+                        dto.put("iniciales", solicitante.getIniciales());
+                        dto.put("fechaSolicitud", solicitud.getFechaUnion());
+                        dto.put("intentos", solicitud.getIntentosSolicitud());
+                        return dto;
+                    })
+                    .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(Map.of(
+                "solicitudes", solicitudesDTO,
+                "total", solicitudesDTO.size()
+            ));
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(Map.of("error", "Error al obtener solicitudes: " + e.getMessage()));
         }
     }
 
@@ -333,30 +399,288 @@ public class GruposRestController {
                         .build());
             }
             
+            // Obtener usuario autenticado
+            String email = authentication.getName();
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
             // Buscar el grupo
             GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
                     .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
 
-            // Verificar que no esté lleno
-            long aceptados = participanteGrupoRepository.countByGrupoAndEstadoSolicitud(grupo, EstadoSolicitud.ACEPTADO);
-            if ((aceptados + 1) >= grupo.getMaxParticipantes()) {
+            // 1. Validar que no es el creador
+            if (grupo.getCreador().getIdUsuario().equals(usuario.getIdUsuario())) {
+                return ResponseEntity.badRequest().body(ActionResponse.builder()
+                        .success(false)
+                        .error("No puedes unirte a tu propio grupo")
+                        .build());
+            }
+
+            // 2. Verificar capacidad del grupo
+            long participantesAceptados = participanteGrupoRepository
+                    .countByGrupoAndEstadoSolicitud(grupo, EstadoSolicitud.ACEPTADO);
+            
+            // Incluir al creador en el conteo (+1)
+            if ((participantesAceptados + 1) >= grupo.getMaxParticipantes()) {
                 return ResponseEntity.badRequest().body(ActionResponse.builder()
                         .success(false)
                         .error("El grupo está lleno")
                         .build());
             }
 
-            // Aquí llamar al servicio que maneja la lógica de unirse
-            // Por ahora retornamos éxito simulado
+            // 3. Verificar si ya existe una solicitud
+            ParticipanteGrupo participanteExistente = participanteGrupoRepository
+                    .findByUsuarioAndGrupo(usuario, grupo)
+                    .orElse(null);
+
+            if (participanteExistente != null) {
+                // Ya existe una solicitud, verificar estado
+                switch (participanteExistente.getEstadoSolicitud()) {
+                    case ACEPTADO:
+                        return ResponseEntity.badRequest().body(ActionResponse.builder()
+                                .success(false)
+                                .error("Ya eres miembro de este grupo")
+                                .build());
+                    
+                    case PENDIENTE:
+                        return ResponseEntity.badRequest().body(ActionResponse.builder()
+                                .success(false)
+                                .error("Ya tienes una solicitud pendiente para este grupo")
+                                .build());
+                    
+                    case RECHAZADO:
+                        // Permitir reintentar si no ha superado el límite
+                        int intentosActuales = participanteExistente.getIntentosSolicitud() != null 
+                                ? participanteExistente.getIntentosSolicitud() 
+                                : 0;
+                        
+                        if (intentosActuales >= 3) {
+                            return ResponseEntity.badRequest().body(ActionResponse.builder()
+                                    .success(false)
+                                    .error("Has alcanzado el límite máximo de intentos (3/3) para este grupo")
+                                    .build());
+                        }
+                        
+                        // Actualizar solicitud existente
+                        participanteExistente.setEstadoSolicitud(EstadoSolicitud.PENDIENTE);
+                        participanteExistente.setIntentosSolicitud(intentosActuales + 1);
+                        participanteExistente.setFechaUnion(java.time.LocalDateTime.now());
+                        participanteGrupoRepository.save(participanteExistente);
+                        
+                        // Enviar notificación al líder
+                        notificacionService.crearNotificacionSolicitudUnion(
+                                usuario, 
+                                grupo.getCreador(), 
+                                grupo.getIdGrupo(), 
+                                grupo.getNombreViaje());
+                        
+                        String mensaje = (intentosActuales + 1) == 1 
+                                ? "Solicitud enviada exitosamente al líder del grupo"
+                                : "Solicitud reenviada exitosamente (intento " + (intentosActuales + 1) + " de 3)";
+                        
+                        return ResponseEntity.ok(ActionResponse.builder()
+                                .success(true)
+                                .message(mensaje)
+                                .build());
+                }
+            }
+
+            // 4. Crear nueva solicitud (primera vez)
+            ParticipanteGrupo nuevaSolicitud = ParticipanteGrupo.builder()
+                    .usuario(usuario)
+                    .grupo(grupo)
+                    .rolParticipante("MIEMBRO")
+                    .estadoSolicitud(EstadoSolicitud.PENDIENTE)
+                    .fechaUnion(java.time.LocalDateTime.now())
+                    .intentosSolicitud(1)
+                    .build();
+            
+            participanteGrupoRepository.save(nuevaSolicitud);
+
+            // 5. Enviar notificación al líder del grupo
+            notificacionService.crearNotificacionSolicitudUnion(
+                    usuario, 
+                    grupo.getCreador(), 
+                    grupo.getIdGrupo(), 
+                    grupo.getNombreViaje());
+
             return ResponseEntity.ok(ActionResponse.builder()
                     .success(true)
-                    .message("Solicitud enviada exitosamente")
+                    .message("Solicitud enviada exitosamente al líder del grupo")
                     .build());
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(ActionResponse.builder()
                     .success(false)
                     .error("Error al unirse al grupo: " + e.getMessage())
+                    .build());
+        }
+    }
+
+    @PostMapping("/{id}/solicitudes/{idUsuario}/aceptar")
+    public ResponseEntity<ActionResponse> aceptarSolicitud(
+            @PathVariable("id") Long idGrupo,
+            @PathVariable("idUsuario") Long idSolicitante,
+            Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(401).body(ActionResponse.builder()
+                        .success(false)
+                        .error("Debes iniciar sesión")
+                        .build());
+            }
+            
+            // Obtener líder autenticado
+            String email = authentication.getName();
+            Usuario lider = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            // Buscar grupo y solicitante
+            GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
+                    .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+            
+            Usuario solicitante = usuarioRepository.findById(idSolicitante)
+                    .orElseThrow(() -> new RuntimeException("Solicitante no encontrado"));
+            
+            // Validar que el usuario es el líder del grupo
+            if (!grupo.getCreador().getIdUsuario().equals(lider.getIdUsuario())) {
+                return ResponseEntity.status(403).body(ActionResponse.builder()
+                        .success(false)
+                        .error("No tienes permisos para aprobar solicitudes de este grupo")
+                        .build());
+            }
+            
+            // Buscar la solicitud
+            ParticipanteGrupo solicitud = participanteGrupoRepository
+                    .findByUsuarioAndGrupo(solicitante, grupo)
+                    .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
+            
+            // Validar que está pendiente
+            if (solicitud.getEstadoSolicitud() != EstadoSolicitud.PENDIENTE) {
+                return ResponseEntity.badRequest().body(ActionResponse.builder()
+                        .success(false)
+                        .error("La solicitud no está pendiente")
+                        .build());
+            }
+            
+            // Verificar capacidad del grupo antes de aceptar
+            long participantesAceptados = participanteGrupoRepository
+                    .countByGrupoAndEstadoSolicitud(grupo, EstadoSolicitud.ACEPTADO);
+            
+            if ((participantesAceptados + 1) >= grupo.getMaxParticipantes()) {
+                return ResponseEntity.badRequest().body(ActionResponse.builder()
+                        .success(false)
+                        .error("El grupo está lleno")
+                        .build());
+            }
+            
+            // 1. Actualizar estado de la solicitud
+            solicitud.setEstadoSolicitud(EstadoSolicitud.ACEPTADO);
+            participanteGrupoRepository.save(solicitud);
+            
+            // 2. Asignar rol de MIEMBRO al usuario
+            // IMPORTANTE: Eliminar cualquier rol existente (activo o inactivo) antes de asignar
+            Optional<UsuarioRolGrupo> rolExistente = usuarioRolGrupoRepository
+                    .findByUsuarioAndGrupo(solicitante, grupo);
+            
+            if (rolExistente.isPresent()) {
+                usuarioRolGrupoRepository.delete(rolExistente.get());
+                usuarioRolGrupoRepository.flush(); // Asegurar que se elimina antes de insertar
+            }
+            
+            Rol rolMiembro = rolRepository.findByNombreRol("MIEMBRO")
+                    .orElseThrow(() -> new RuntimeException("Rol MIEMBRO no encontrado"));
+            permisosService.asignarRolEnGrupo(solicitante, grupo, rolMiembro, lider);
+            
+            // 3. Enviar notificación de aceptación al solicitante
+            notificacionService.crearNotificacionSolicitudAceptada(solicitante, grupo.getNombreViaje());
+            
+            return ResponseEntity.ok(ActionResponse.builder()
+                    .success(true)
+                    .message("Solicitud aceptada exitosamente")
+                    .build());
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ActionResponse.builder()
+                    .success(false)
+                    .error("Error al aceptar solicitud: " + e.getMessage())
+                    .build());
+        }
+    }
+
+    @PostMapping("/{id}/solicitudes/{idUsuario}/rechazar")
+    public ResponseEntity<ActionResponse> rechazarSolicitud(
+            @PathVariable("id") Long idGrupo,
+            @PathVariable("idUsuario") Long idSolicitante,
+            Authentication authentication) {
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                return ResponseEntity.status(401).body(ActionResponse.builder()
+                        .success(false)
+                        .error("Debes iniciar sesión")
+                        .build());
+            }
+            
+            // Obtener líder autenticado
+            String email = authentication.getName();
+            Usuario lider = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            // Buscar grupo y solicitante
+            GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
+                    .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+            
+            Usuario solicitante = usuarioRepository.findById(idSolicitante)
+                    .orElseThrow(() -> new RuntimeException("Solicitante no encontrado"));
+            
+            // Validar que el usuario es el líder del grupo
+            if (!grupo.getCreador().getIdUsuario().equals(lider.getIdUsuario())) {
+                return ResponseEntity.status(403).body(ActionResponse.builder()
+                        .success(false)
+                        .error("No tienes permisos para rechazar solicitudes de este grupo")
+                        .build());
+            }
+            
+            // Buscar la solicitud
+            ParticipanteGrupo solicitud = participanteGrupoRepository
+                    .findByUsuarioAndGrupo(solicitante, grupo)
+                    .orElseThrow(() -> new RuntimeException("Solicitud no encontrada"));
+            
+            // Validar que está pendiente
+            if (solicitud.getEstadoSolicitud() != EstadoSolicitud.PENDIENTE) {
+                return ResponseEntity.badRequest().body(ActionResponse.builder()
+                        .success(false)
+                        .error("La solicitud no está pendiente")
+                        .build());
+            }
+            
+            int intentosActuales = solicitud.getIntentosSolicitud() != null 
+                    ? solicitud.getIntentosSolicitud() 
+                    : 1;
+            
+            // 1. Actualizar estado de la solicitud
+            solicitud.setEstadoSolicitud(EstadoSolicitud.RECHAZADO);
+            participanteGrupoRepository.save(solicitud);
+            
+            // 2. Remover cualquier rol que pudiera tener (por si acaso)
+            permisosService.removerRolEnGrupo(solicitante, grupo, lider);
+            
+            // 3. Enviar notificación de rechazo con contador de intentos
+            notificacionService.crearNotificacionSolicitudRechazada(
+                    solicitante, 
+                    grupo.getNombreViaje(), 
+                    intentosActuales, 
+                    3);
+            
+            return ResponseEntity.ok(ActionResponse.builder()
+                    .success(true)
+                    .message("Solicitud rechazada")
+                    .build());
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(ActionResponse.builder()
+                    .success(false)
+                    .error("Error al rechazar solicitud: " + e.getMessage())
                     .build());
         }
     }
@@ -371,7 +695,42 @@ public class GruposRestController {
                         .build());
             }
 
-            // Aquí llamar al servicio que maneja la lógica de abandonar
+            // Obtener usuario autenticado
+            String email = authentication.getName();
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            // Buscar el grupo
+            GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
+                    .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+            
+            // Validar que el usuario no es el creador
+            if (grupo.getCreador().getIdUsuario().equals(usuario.getIdUsuario())) {
+                return ResponseEntity.badRequest().body(ActionResponse.builder()
+                        .success(false)
+                        .error("El creador del grupo no puede abandonarlo. Puedes eliminarlo si lo deseas.")
+                        .build());
+            }
+            
+            // Buscar la participación del usuario
+            ParticipanteGrupo participacion = participanteGrupoRepository
+                    .findByUsuarioAndGrupo(usuario, grupo)
+                    .orElseThrow(() -> new RuntimeException("No eres miembro de este grupo"));
+            
+            // Validar que está aceptado
+            if (participacion.getEstadoSolicitud() != EstadoSolicitud.ACEPTADO) {
+                return ResponseEntity.badRequest().body(ActionResponse.builder()
+                        .success(false)
+                        .error("No eres miembro activo de este grupo")
+                        .build());
+            }
+            
+            // Eliminar la participación
+            participanteGrupoRepository.delete(participacion);
+            
+            // Remover roles del usuario en este grupo
+            permisosService.removerRolEnGrupo(usuario, grupo, grupo.getCreador());
+
             return ResponseEntity.ok(ActionResponse.builder()
                     .success(true)
                     .message("Has abandonado el grupo exitosamente")
