@@ -1,5 +1,6 @@
 package com.add.venture.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -61,4 +62,15 @@ public interface GrupoViajeRepository extends JpaRepository<GrupoViaje, Long> {
      * @return una lista de grupos con el estado especificado
      */
     List<GrupoViaje> findByEstado(String estado);
+    
+    /**
+     * Busca grupos cerrados o concluidos antes de una fecha específica
+     * Usa consulta personalizada porque la entidad no tiene fechaModificacion
+     * 
+     * @param estados lista de estados (ej: ["cerrado", "concluido"])
+     * @param fecha fecha límite
+     * @return lista de grupos cerrados antes de la fecha
+     */
+    @Query("SELECT g FROM GrupoViaje g WHERE g.estado IN :estados AND g.fechaCreacion < :fecha")
+    List<GrupoViaje> findGruposCerradosAntiguos(@Param("estados") List<String> estados, @Param("fecha") LocalDateTime fecha);
 }

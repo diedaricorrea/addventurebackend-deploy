@@ -26,16 +26,16 @@ public interface BuscarGrupoRepository extends JpaRepository<GrupoViaje, Long> {
     @Query("SELECT g FROM GrupoViaje g JOIN g.viaje v WHERE v.fechaInicio >= :fechaInicio AND g.estado = :estado")
     Page<GrupoViaje> findByFechaInicioGreaterThanEqualAndEstado(@Param("fechaInicio") LocalDate fechaInicio, @Param("estado") String estado, Pageable pageable);
 
-    //Buscar según fecha de fin del viaje y estado
+    //Buscar según fecha de fin del viaje y estado (viajes que terminan en o antes de la fecha)
     @Query("SELECT g FROM GrupoViaje g JOIN g.viaje v WHERE v.fechaFin <= :fechaFin AND g.estado = :estado")
     Page<GrupoViaje> findByFechaFinLessThanEqualAndEstado(@Param("fechaFin") LocalDate fechaFin, @Param("estado") String estado, Pageable pageable);
 
-    //Buscar según fecha de inicio, fecha de fin y estado
-    @Query("SELECT g FROM GrupoViaje g JOIN g.viaje v WHERE v.fechaInicio >= :fechaInicio AND v.fechaFin <= :fechaFin AND g.estado = :estado")
+    //Buscar según rango de fechas (viajes que se solapan con el rango especificado)
+    @Query("SELECT g FROM GrupoViaje g JOIN g.viaje v WHERE v.fechaInicio <= :fechaFin AND v.fechaFin >= :fechaInicio AND g.estado = :estado")
     Page<GrupoViaje> findByFechaInicioGreaterThanEqualAndFechaFinLessThanEqualAndEstado(@Param("fechaInicio") LocalDate fechaInicio, @Param("fechaFin") LocalDate fechaFin, @Param("estado") String estado, Pageable pageable);
 
-    //Buscar según fecha de inicio, fecha de fin, destino principal y estado
-    @Query("SELECT g FROM GrupoViaje g JOIN g.viaje v WHERE LOWER(v.destinoPrincipal) LIKE LOWER(CONCAT('%', :destinoPrincipal, '%')) AND v.fechaInicio >= :fechaInicio AND v.fechaFin <= :fechaFin AND g.estado = :estadoGrupo")
+    //Buscar según destino y rango de fechas (viajes que se solapan con el rango especificado)
+    @Query("SELECT g FROM GrupoViaje g JOIN g.viaje v WHERE LOWER(v.destinoPrincipal) LIKE LOWER(CONCAT('%', :destinoPrincipal, '%')) AND v.fechaInicio <= :fechaFin AND v.fechaFin >= :fechaInicio AND g.estado = :estado")
     Page<GrupoViaje> findByDestinoPrincipalContainingIgnoreCaseAndFechaInicioGreaterThanEqualAndFechaFinLessThanEqualAndEstado(
         @Param("destinoPrincipal") String destinoPrincipal, @Param("fechaInicio") LocalDate fechaInicio, @Param("fechaFin") LocalDate fechaFin, @Param("estado") String estado, Pageable pageable);
     
