@@ -24,13 +24,14 @@ WORKDIR /app
 
 # Crear usuario no-root por seguridad
 RUN addgroup -S spring && adduser -S spring -G spring
+
+# Crear carpeta para uploads antes de cambiar de usuario
+RUN mkdir -p /app/uploads && chown -R spring:spring /app/uploads
+
 USER spring:spring
 
 # Copiar JAR compilado desde stage anterior
 COPY --from=build /app/target/*.jar app.jar
-
-# Crear carpeta para uploads
-RUN mkdir -p /app/uploads
 
 # Exponer puerto
 EXPOSE 8080
