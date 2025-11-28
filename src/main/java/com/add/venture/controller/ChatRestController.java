@@ -1,9 +1,13 @@
 package com.add.venture.controller;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -45,6 +49,8 @@ public class ChatRestController {
 
     @Autowired
     private IPermisosService permisosService;
+
+    private final String UPLOAD_DIR = "uploads/chat";
 
     @GetMapping("/{idGrupo}/mensajes")
     public ResponseEntity<?> obtenerMensajes(@PathVariable Long idGrupo, Authentication authentication) {
@@ -150,7 +156,46 @@ public class ChatRestController {
                         .build());
             }
 
-            // Validar tamaño de imagen (máximo 5MB)
+            String email = authentication.getName();
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
+                    .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+
+            // Verificar que el grupo no esté cerrado
+            if ("cerrado".equals(grupo.getEstado()) || "concluido".equals(grupo.getEstado())) {
+                return ResponseEntity.badRequest().body(ActionResponse.builder()
+                        .success(false)
+                        .error("No se pueden enviar archivos en un grupo cerrado o concluido")
+                        .build());
+            }
+
+            // Verificar permisos
+            if (!permisosService.usuarioTienePermiso(usuario, grupo, "COMPARTIR_ARCHIVOS")) {
+                return ResponseEntity.status(403).body(ActionResponse.builder()
+                        .success(false)
+                        .error("No tienes permiso para compartir archivos en este grupo")
+                        .build());
+            }
+
+            if (imagen.isEmpty()) {
+                return ResponseEntity.badRequest().body(ActionResponse.builder()
+                        .success(false)
+                        .error("No se ha seleccionado ninguna imagen")
+                        .build());
+            }
+
+            // Validar tipo de archivo
+            String contentType = imagen.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                return ResponseEntity.badRequest().body(ActionResponse.builder()
+                        .success(false)
+                        .error("Solo se permiten archivos de imagen")
+                        .build());
+            }
+
+            // Validar tamaño (máximo 5MB)
             if (imagen.getSize() > 5 * 1024 * 1024) {
                 return ResponseEntity.badRequest().body(ActionResponse.builder()
                         .success(false)
@@ -158,12 +203,50 @@ public class ChatRestController {
                         .build());
             }
 
-            // Aquí iría la lógica de subida y guardado de imagen
-            Map<String, Object> response = new HashMap<>();
-            response.put("idMensaje", 1L);
-            response.put("success", true);
+            // Generar nombre único para el archivo
+            String originalFileName = imagen.getOriginalFilename();
+            if (originalFileName == null || !originalFileName.contains(".")) {
+                return ResponseEntity.badRequest().body(ActionResponse.builder()
+                        .success(false)
+                        .error("Nombre de archivo inválido")
+                        .build());
+            }
 
-            return ResponseEntity.ok(response);
+            String fileExtension = originalFileName.substring(originalFileName.lastIndexOf("."));
+            String fileName = UUID.randomUUID().toString() + fileExtension;
+
+            // Crear directorio si no existe
+            Path projectRoot = Paths.get("").toAbsolutePath();
+            Path uploadPath = projectRoot.resolve(UPLOAD_DIR);
+            
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+
+            // Guardar archivo
+            Path filePath = uploadPath.resolve(fileName);
+            imagen.transferTo(filePath.toFile());
+
+            // Crear mensaje con imagen
+            MensajeGrupo nuevoMensaje = MensajeGrupo.builder()
+                    .mensaje(descripcion != null && !descripcion.trim().isEmpty() 
+                        ? descripcion.trim() 
+                        : "Imagen compartida")
+                    .grupo(grupo)
+                    .remitente(usuario)
+                    .fechaEnvio(LocalDateTime.now())
+                    .tipoMensaje("imagen")
+                    .archivoUrl("/" + UPLOAD_DIR + "/" + fileName)
+                    .archivoNombre(originalFileName)
+                    .estado("activo")
+                    .build();
+
+            mensajeGrupoRepository.save(nuevoMensaje);
+            
+            // Enviar por WebSocket
+            messagingTemplate.convertAndSend("/topic/grupo/" + idGrupo, nuevoMensaje);
+
+            return ResponseEntity.ok(nuevoMensaje);
 
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(ActionResponse.builder()
