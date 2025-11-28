@@ -54,6 +54,8 @@ public class HomeRestController {
                 homeData.setIniciales(iniciales.toUpperCase());
                 homeData.setIdUsuario(usuario.getIdUsuario());
                 homeData.setUsername(usuario.getNombre() + " " + usuario.getApellidos());
+                homeData.setNombre(usuario.getNombre());
+                homeData.setApellido(usuario.getApellidos());
                 homeData.setEmail(usuario.getEmail());
                 homeData.setImagenPerfil(usuario.getFotoPerfil());
                 homeData.setImagenPortada(usuario.getFotoPortada());
