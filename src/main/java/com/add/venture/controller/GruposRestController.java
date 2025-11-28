@@ -241,6 +241,7 @@ public class GruposRestController {
                     .fechaInicio(grupo.getViaje().getFechaInicio())
                     .fechaFin(grupo.getViaje().getFechaFin())
                     .descripcion(grupo.getViaje().getDescripcion())
+                    .puntoEncuentro(grupo.getViaje().getPuntoEncuentro())
                     .rangoEdadMin(grupo.getViaje().getRangoEdadMin())
                     .rangoEdadMax(grupo.getViaje().getRangoEdadMax())
                     .esVerificado(grupo.getViaje().getEsVerificado())

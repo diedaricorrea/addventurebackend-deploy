@@ -41,6 +41,7 @@ public class GrupoViajeResponseDTO {
         private LocalDate fechaInicio;
         private LocalDate fechaFin;
         private String descripcion;
+        private String puntoEncuentro;
         private Integer rangoEdadMin;
         private Integer rangoEdadMax;
         private Boolean esVerificado;
