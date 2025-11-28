@@ -393,32 +393,6 @@
     <!-- Scripts de Bootstrap y WebSocket en el orden correcto -->
     <th:block th:replace="~{fragments/head :: scripts}"></th:block>
 
-    <!-- Debug para dropdown -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Página cargada, Bootstrap disponible:', typeof bootstrap !== 'undefined');
-            
-            const dropdown = document.getElementById('userDropdown');
-            if (dropdown) {
-                console.log('Dropdown encontrado, intentando inicializar...');
-                setTimeout(() => {
-                    if (typeof bootstrap !== 'undefined') {
-                        try {
-                            const bsDropdown = new bootstrap.Dropdown(dropdown);
-                            console.log('✅ Dropdown inicializado correctamente');
-                        } catch (error) {
-                            console.error('❌ Error inicializando dropdown:', error);
-                        }
-                    } else {
-                        console.error('❌ Bootstrap no disponible');
-                    }
-                }, 500);
-            } else {
-                console.log('Usuario no autenticado o dropdown no encontrado');
-            }
-        });
-    </script>
-
     <!-- FRAGMENT PARA WEBSOCKET SI ESTÁ AUTENTICADO -->
     <div th:replace="~{fragments/head :: global-websocket}"></div>
 </body>

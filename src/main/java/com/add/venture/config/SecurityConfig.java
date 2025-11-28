@@ -85,6 +85,8 @@ public class SecurityConfig {
                                 "/api/home", // Endpoint público de home (lista grupos)
                                 "/api/grupos", // Endpoint público de búsqueda de grupos
                                 "/api/grupos/*/permisos", // Endpoint de permisos (necesario para botones)
+                                "/api/testimonios/destacados", // Testimonios destacados para index
+                                "/api/testimonios/aprobados", // Todos los testimonios aprobados
                                 "/api/support/**", // Endpoints de soporte
                                 "/css/**",
                                 "/js/**",
