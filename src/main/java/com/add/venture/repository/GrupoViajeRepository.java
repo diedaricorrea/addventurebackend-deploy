@@ -3,6 +3,8 @@ package com.add.venture.repository;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -62,6 +64,11 @@ public interface GrupoViajeRepository extends JpaRepository<GrupoViaje, Long> {
      * @return una lista de grupos con el estado especificado
      */
     List<GrupoViaje> findByEstado(String estado);
+    
+    /**
+     * Busca grupos por estado con paginación
+     */
+    Page<GrupoViaje> findByEstado(String estado, Pageable pageable);
     
     /**
      * Busca grupos cerrados o concluidos antes de una fecha específica

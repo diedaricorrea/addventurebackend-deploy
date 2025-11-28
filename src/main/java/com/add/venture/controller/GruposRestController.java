@@ -926,4 +926,33 @@ public class GruposRestController {
                     .build());
         }
     }
+
+    /**
+     * Obtener grupos destacados/tendencia (últimos 6 grupos activos)
+     */
+    @GetMapping("/destinos-tendencia")
+    public ResponseEntity<List<GrupoViajeResponseDTO>> obtenerGruposDestacados() {
+        try {
+            // Obtener últimos 6 grupos activos ordenados por fecha de creación
+            Pageable pageable = PageRequest.of(0, 6, Sort.by("fechaCreacion").descending());
+            Page<GrupoViaje> gruposPage = grupoViajeRepository.findByEstado("activo", pageable);
+            
+            // Convertir a DTOs y filtrar los que tienen cupo disponible
+            List<GrupoViajeResponseDTO> gruposDTO = gruposPage.getContent().stream()
+                .filter(grupo -> {
+                    long aceptados = participanteGrupoRepository.countByGrupoAndEstadoSolicitud(grupo,
+                            EstadoSolicitud.ACEPTADO);
+                    return (aceptados + 1) < grupo.getMaxParticipantes();
+                })
+                .map(this::convertirADTO)
+                .limit(6)
+                .collect(Collectors.toList());
+            
+            return ResponseEntity.ok(gruposDTO);
+            
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().body(List.of());
+        }
+    }
 }
+
