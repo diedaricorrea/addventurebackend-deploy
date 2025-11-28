@@ -19,13 +19,18 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.add.venture.dto.ActionResponse;
+import com.add.venture.dto.CrearGrupoViajeDTO;
 import com.add.venture.dto.GrupoViajeResponseDTO;
 import com.add.venture.model.Rol;
+
+import jakarta.validation.Valid;
 import com.add.venture.model.Usuario;
 import com.add.venture.model.UsuarioRolGrupo;
 import com.add.venture.model.GrupoViaje;
@@ -72,7 +77,13 @@ public class GruposRestController {
     
     @Autowired
     private RolRepository rolRepository;
+    
+    @Autowired
+    private com.add.venture.service.IGrupoViajeService grupoViajeService;
 
+    /**
+     * Buscar grupos con filtros
+     */
     @GetMapping
     public ResponseEntity<Map<String, Object>> buscarGrupos(
             @RequestParam(required = false) String destinoPrincipal,
@@ -770,6 +781,83 @@ public class GruposRestController {
                     .success(false)
                     .error("Error al cerrar el grupo: " + e.getMessage())
                     .build());
+        }
+    }
+
+    /**
+     * Crear un nuevo grupo de viaje
+     */
+    @PostMapping
+    public ResponseEntity<Map<String, Object>> crearGrupo(
+            @Valid @RequestBody CrearGrupoViajeDTO dto,
+            Authentication authentication) {
+        
+        Map<String, Object> response = new HashMap<>();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            response.put("success", false);
+            response.put("error", "Usuario no autenticado");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        try {
+            GrupoViaje grupoCreado = grupoViajeService.crearGrupoViaje(dto);
+            
+            response.put("success", true);
+            response.put("mensaje", "Grupo de viaje creado exitosamente");
+            response.put("idGrupo", grupoCreado.getIdGrupo());
+            
+            return ResponseEntity.status(201).body(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", "Error al crear el grupo: " + e.getMessage());
+            return ResponseEntity.status(400).body(response);
+        }
+    }
+
+    /**
+     * Actualizar un grupo de viaje existente
+     */
+    @PutMapping("/{id}")
+    public ResponseEntity<Map<String, Object>> actualizarGrupo(
+            @PathVariable Long id,
+            @Valid @RequestBody CrearGrupoViajeDTO dto,
+            Authentication authentication) {
+        
+        Map<String, Object> response = new HashMap<>();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            response.put("success", false);
+            response.put("error", "Usuario no autenticado");
+            return ResponseEntity.status(401).body(response);
+        }
+
+        try {
+            String email = authentication.getName();
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+
+            GrupoViaje grupo = grupoViajeRepository.findById(id)
+                    .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+
+            // Verificar que el usuario sea el creador del grupo
+            if (!grupo.getCreador().equals(usuario)) {
+                response.put("success", false);
+                response.put("error", "Solo el creador puede editar el grupo");
+                return ResponseEntity.status(403).body(response);
+            }
+
+            GrupoViaje grupoActualizado = grupoViajeService.actualizarGrupoViaje(id, dto);
+            
+            response.put("success", true);
+            response.put("mensaje", "Grupo actualizado exitosamente");
+            response.put("idGrupo", grupoActualizado.getIdGrupo());
+            
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", "Error al actualizar el grupo: " + e.getMessage());
+            return ResponseEntity.status(400).body(response);
         }
     }
 
