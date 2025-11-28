@@ -800,6 +800,24 @@ public class GruposRestController {
             return ResponseEntity.status(401).body(response);
         }
 
+        // Validar que la fecha de fin sea posterior o igual a la fecha de inicio
+        if (dto.getFechaFin() != null && dto.getFechaInicio() != null) {
+            if (dto.getFechaFin().isBefore(dto.getFechaInicio())) {
+                response.put("success", false);
+                response.put("error", "La fecha de fin debe ser igual o posterior a la fecha de inicio");
+                return ResponseEntity.status(400).body(response);
+            }
+        }
+
+        // Validar rango de edad
+        if (dto.getRangoEdadMax() != null && dto.getRangoEdadMin() != null) {
+            if (dto.getRangoEdadMax() < dto.getRangoEdadMin()) {
+                response.put("success", false);
+                response.put("error", "La edad máxima debe ser mayor o igual a la edad mínima");
+                return ResponseEntity.status(400).body(response);
+            }
+        }
+
         try {
             GrupoViaje grupoCreado = grupoViajeService.crearGrupoViaje(dto);
             
@@ -845,6 +863,24 @@ public class GruposRestController {
                 response.put("success", false);
                 response.put("error", "Solo el creador puede editar el grupo");
                 return ResponseEntity.status(403).body(response);
+            }
+
+            // Validar que la fecha de fin sea posterior o igual a la fecha de inicio
+            if (dto.getFechaFin() != null && dto.getFechaInicio() != null) {
+                if (dto.getFechaFin().isBefore(dto.getFechaInicio())) {
+                    response.put("success", false);
+                    response.put("error", "La fecha de fin debe ser igual o posterior a la fecha de inicio");
+                    return ResponseEntity.status(400).body(response);
+                }
+            }
+
+            // Validar rango de edad
+            if (dto.getRangoEdadMax() != null && dto.getRangoEdadMin() != null) {
+                if (dto.getRangoEdadMax() < dto.getRangoEdadMin()) {
+                    response.put("success", false);
+                    response.put("error", "La edad máxima debe ser mayor o igual a la edad mínima");
+                    return ResponseEntity.status(400).body(response);
+                }
             }
 
             GrupoViaje grupoActualizado = grupoViajeService.actualizarGrupoViaje(id, dto);

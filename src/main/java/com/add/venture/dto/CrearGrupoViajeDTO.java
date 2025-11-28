@@ -6,7 +6,8 @@ import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.stream.Collectors;
 
-import jakarta.validation.constraints.Future;
+import com.add.venture.validation.FechaViaje;
+
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -36,11 +37,11 @@ public class CrearGrupoViajeDTO {
     private String destinoPrincipal;
     
     @NotNull(message = "La fecha de inicio es obligatoria")
-    @Future(message = "La fecha de inicio debe ser en el futuro")
+    @FechaViaje(message = "La fecha de inicio debe ser al menos 1 semana después de hoy")
     private LocalDate fechaInicio;
     
     @NotNull(message = "La fecha de fin es obligatoria")
-    @Future(message = "La fecha de fin debe ser en el futuro")
+    @FechaViaje(message = "La fecha de fin debe ser al menos 1 semana después de hoy")
     private LocalDate fechaFin;
     
     @NotBlank(message = "La descripción es obligatoria")
