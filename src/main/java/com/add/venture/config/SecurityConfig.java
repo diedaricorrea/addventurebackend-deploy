@@ -62,24 +62,26 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable()) // ⚠️ desactivar CSRF para APIs REST
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(
-                                "/api/auth/**",
-                                "/api/home",
-                                "/api/grupos",
-                                "/api/grupos/*/permisos",
-                                "/api/testimonios/destacados",
-                                "/api/testimonios/aprobados",
-                                "/api/support/**",
-                                "/css/**",
-                                "/js/**",
-                                "/images/**",
-                                "/uploads/**",
-                                "/ws/**",
-                                "/",
-                                "/auth/**")
-                        .permitAll()
-                        .anyRequest().authenticated())
+                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                    .requestMatchers(
+                        "/api/auth/**",
+                        "/api/home",
+                        "/api/grupos",
+                        "/api/grupos/*/permisos",
+                        "/api/grupos/{id}",
+                        "/api/grupos/destinos-tendencia",
+                        "/api/testimonios/destacados",
+                        "/api/testimonios/aprobados",
+                        "/api/support/**",
+                        "/css/**",
+                        "/js/**",
+                        "/images/**",
+                        "/uploads/**",
+                        "/ws/**",
+                        "/",
+                        "/auth/**")
+                    .permitAll()
+                    .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exceptions -> exceptions
