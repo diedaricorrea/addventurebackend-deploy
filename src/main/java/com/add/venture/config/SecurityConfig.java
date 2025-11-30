@@ -45,7 +45,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("https://addventurefronted-deploy.vercel.app")); // tu frontend
+        configuration.setAllowedOriginPatterns(List.of(
+            "https://addventurefronted-deploy.vercel.app",
+            "https://addventurefronted-deploy-pjo0nlvju-diedaricodes-projects.vercel.app"
+        )); // dominios de tu frontend en Vercel
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*")); // acepta todos los headers
         configuration.setAllowCredentials(true); // si mandas cookies o auth headers
