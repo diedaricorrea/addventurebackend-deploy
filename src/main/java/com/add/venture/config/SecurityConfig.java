@@ -45,14 +45,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(Arrays.asList(allowedOrigins.split(","))); // usa la variable de entorno
+        configuration.setAllowedOriginPatterns(List.of("https://addventurefronted-deploy.vercel.app")); // tu frontend
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowedHeaders(List.of("*")); // acepta todos los headers
+        configuration.setAllowCredentials(true); // si mandas cookies o auth headers
+        configuration.setExposedHeaders(List.of("Authorization")); // si quieres exponer cabeceras al frontend
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration);
+        source.registerCorsConfiguration("/**", configuration); // aplica a todas las rutas
         return source;
     }
 
