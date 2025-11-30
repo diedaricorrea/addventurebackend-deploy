@@ -50,7 +50,7 @@ public class SecurityConfig {
         configuration.setAllowedHeaders(Arrays.asList("*"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
-        
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -59,112 +59,36 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // Habilitar CORS con la configuración personalizada
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-                
-                .csrf(csrf -> csrf
-                        .ignoringRequestMatchers(
-                                "/api/**",
-                                "/chat/**", 
-                                "/notificaciones/*/marcar-leida",
-                                "/notificaciones/marcar-todas-leidas",
-                                "/notificaciones/responder-solicitud",
-                                "/grupos/*/unirse"))
-                
-                // Configurar sesiones como STATELESS para JWT
-                .sessionManagement(session -> session
-                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-
+                .csrf(csrf -> csrf.disable()) // ⚠️ desactivar CSRF para APIs REST
                 .authorizeHttpRequests(auth -> auth
-                        // Permitir solicitudes OPTIONS para CORS preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        
-                        // Rutas públicas (sin autenticación)
                         .requestMatchers(
-                                "/api/auth/**", // Endpoints de autenticación JWT
-                                "/api/home", // Endpoint público de home (lista grupos)
-                                "/api/grupos", // Endpoint público de búsqueda de grupos
-                                "/api/grupos/*/permisos", // Endpoint de permisos (necesario para botones)
-                                "/api/testimonios/destacados", // Testimonios destacados para index
-                                "/api/testimonios/aprobados", // Todos los testimonios aprobados
-                                "/api/support/**", // Endpoints de soporte
+                                "/api/auth/**",
+                                "/api/home",
+                                "/api/grupos",
+                                "/api/grupos/*/permisos",
+                                "/api/testimonios/destacados",
+                                "/api/testimonios/aprobados",
+                                "/api/support/**",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**",
                                 "/uploads/**",
-                                "/ws/**", // Endpoint WebSocket (handshake - auth en interceptor)
+                                "/ws/**",
                                 "/",
-                                "/auth/**") // Permitir acceso a páginas de login/registro
+                                "/auth/**")
                         .permitAll()
-                        // GET de detalle de grupo - público para ver
-                        .requestMatchers(HttpMethod.GET, "/api/grupos/*")
-                        .permitAll()
-                        // Rutas API protegidas que requieren JWT (incluyendo chat)
-                        .requestMatchers("/api/**")
-                        .authenticated()
-                        // Rutas que requieren autenticación (form-based o JWT)
-                        .requestMatchers(
-                                "/grupos/*/unirse",
-                                "/grupos/*/abandonar", 
-                                "/grupos/*/expulsar",
-                                "/grupos/*/galeria-fotos",
-                                "/grupos/*/descargar-fotos",
-                                "/grupos/crear",
-                                "/grupos/editar/**",
-                                "/chat/**",
-                                "/notificaciones/**",
-                                "/calificaciones/**",
-                                "/perfil/**",
-                                "/user/**"
-                                )
-                        .authenticated()
                         .anyRequest().authenticated())
-                
-                // Agregar filtro JWT antes del filtro de autenticación estándar
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-                
-                // Configurar manejador de excepciones para rutas API
                 .exceptionHandling(exceptions -> exceptions
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            String requestUri = request.getRequestURI();
-                            // Si es una petición API o WebSocket, devolver 401 JSON sin redirección
-                            if (requestUri.startsWith("/api/") || requestUri.startsWith("/ws/")) {
-                                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                                response.setContentType("application/json;charset=UTF-8");
-                                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-                                response.getWriter().write("{\"error\": \"No autenticado\", \"message\": \"Token invalido o expirado\"}");
-                                response.getWriter().flush();
-                            } else {
-                                // Para rutas web, redirigir al login
-                                response.sendRedirect("/auth/login");
-                            }
-                        })
-                        .accessDeniedHandler((request, response, accessDeniedException) -> {
-                            String requestUri = request.getRequestURI();
-                            if (requestUri.startsWith("/api/") || requestUri.startsWith("/ws/")) {
-                                response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-                                response.setContentType("application/json;charset=UTF-8");
-                                response.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-                                response.getWriter().write("{\"error\": \"Acceso denegado\", \"message\": \"" + accessDeniedException.getMessage() + "\"}");
-                                response.getWriter().flush();
-                            } else {
-                                response.sendRedirect("/auth/login?error=forbidden");
-                            }
-                        })
-                )
-                
-                // Form login solo para rutas NO-API
-                .formLogin(form -> form
-                        .loginPage("/auth/login")
-                        .loginProcessingUrl("/auth/login")
-                        .defaultSuccessUrl("/", true)
-                        .failureUrl("/auth/login?error=true")
-                        .permitAll())
-                
-                .logout(logout -> logout
-                        .logoutUrl("/auth/logout")
-                        .logoutSuccessUrl("/")
-                        .permitAll());
+                        .authenticationEntryPoint((req, res, ex) -> {
+                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            res.setContentType("application/json;charset=UTF-8");
+                            res.getWriter().write("{\"error\":\"No autenticado\"}");
+                            res.getWriter().flush();
+                        }));
 
         return http.build();
     }
