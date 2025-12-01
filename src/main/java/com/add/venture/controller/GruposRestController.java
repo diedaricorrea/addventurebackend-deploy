@@ -24,6 +24,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.util.UUID;
 
 import com.add.venture.dto.ActionResponse;
 import com.add.venture.dto.CrearGrupoViajeDTO;
@@ -952,6 +960,101 @@ public class GruposRestController {
             
         } catch (Exception e) {
             return ResponseEntity.internalServerError().body(List.of());
+        }
+    }
+
+    /**
+     * Subir imagen destacada para un grupo de viaje
+     */
+    @PostMapping("/{id}/imagen-destacada")
+    public ResponseEntity<Map<String, Object>> subirImagenDestacada(
+            @PathVariable("id") Long idGrupo,
+            @RequestParam("imagen") MultipartFile imagen,
+            Authentication authentication) {
+        
+        Map<String, Object> response = new HashMap<>();
+        
+        try {
+            if (authentication == null || !authentication.isAuthenticated()) {
+                response.put("success", false);
+                response.put("error", "Usuario no autenticado");
+                return ResponseEntity.status(401).body(response);
+            }
+            
+            // Obtener usuario autenticado
+            String email = authentication.getName();
+            Usuario usuario = usuarioRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+            
+            // Buscar el grupo
+            GrupoViaje grupo = grupoViajeRepository.findById(idGrupo)
+                    .orElseThrow(() -> new RuntimeException("Grupo no encontrado"));
+            
+            // Verificar que el usuario sea el creador del grupo
+            if (!grupo.getCreador().equals(usuario)) {
+                response.put("success", false);
+                response.put("error", "Solo el creador puede modificar la imagen del grupo");
+                return ResponseEntity.status(403).body(response);
+            }
+            
+            // Validar archivo
+            if (imagen.isEmpty()) {
+                response.put("success", false);
+                response.put("error", "No se ha seleccionado ninguna imagen");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            String contentType = imagen.getContentType();
+            if (contentType == null || !contentType.startsWith("image/")) {
+                response.put("success", false);
+                response.put("error", "El archivo debe ser una imagen");
+                return ResponseEntity.badRequest().body(response);
+            }
+            
+            // Eliminar imagen anterior si existe y no es una URL externa
+            if (grupo.getViaje() != null && grupo.getViaje().getImagenDestacada() != null) {
+                String imagenAnterior = grupo.getViaje().getImagenDestacada();
+                if (!imagenAnterior.startsWith("http")) {
+                    try {
+                        Path pathAntiguo = Paths.get("uploads/grupos/" + imagenAnterior);
+                        Files.deleteIfExists(pathAntiguo);
+                    } catch (Exception e) {
+                        // Ignorar errores al eliminar archivo antiguo
+                    }
+                }
+            }
+            
+            // Crear directorio si no existe
+            Path uploadPath = Paths.get("uploads/grupos");
+            if (!Files.exists(uploadPath)) {
+                Files.createDirectories(uploadPath);
+            }
+            
+            // Guardar nueva imagen
+            String nombreArchivo = UUID.randomUUID().toString() + "_" + imagen.getOriginalFilename();
+            Path filePath = uploadPath.resolve(nombreArchivo);
+            Files.copy(imagen.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            
+            // Actualizar el viaje con la nueva imagen
+            if (grupo.getViaje() != null) {
+                grupo.getViaje().setImagenDestacada("grupos/" + nombreArchivo);
+                grupoViajeRepository.save(grupo);
+            }
+            
+            response.put("success", true);
+            response.put("mensaje", "Imagen subida correctamente");
+            response.put("imagenUrl", "grupos/" + nombreArchivo);
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (IOException e) {
+            response.put("success", false);
+            response.put("error", "Error al guardar la imagen: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
+        } catch (Exception e) {
+            response.put("success", false);
+            response.put("error", "Error al subir la imagen: " + e.getMessage());
+            return ResponseEntity.internalServerError().body(response);
         }
     }
 }

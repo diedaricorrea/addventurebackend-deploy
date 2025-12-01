@@ -33,6 +33,7 @@ public class TestimonioServiceImpl implements ITestimonioService {
                 .calificacion(dto.getCalificacion())
                 .anonimo(dto.getAnonimo())
                 .autor(autor)
+                .aprobado(true) // Auto-aprobar testimonios para que aparezcan inmediatamente
                 .build();
         
         // Si viene con idGrupo, asociarlo

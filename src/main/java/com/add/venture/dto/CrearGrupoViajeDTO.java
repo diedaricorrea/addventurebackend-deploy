@@ -13,7 +13,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -52,7 +51,7 @@ public class CrearGrupoViajeDTO {
     @Size(min = 5, max = 500, message = "El punto de encuentro debe tener entre 5 y 500 caracteres")
     private String puntoEncuentro;
     
-    @Pattern(regexp = "^(https?://).*", message = "La imagen debe ser una URL válida que comience con http:// o https://")
+    // Imagen opcional - si se proporciona debe ser URL válida, pero puede estar vacía o null
     private String imagenDestacada;
     
     @Min(value = 18, message = "La edad mínima debe ser al menos 18 años")
