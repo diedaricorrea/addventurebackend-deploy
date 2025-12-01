@@ -45,14 +45,17 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of("https://addventurefronted-deploy.vercel.app")); // tu frontend
+
+        // Lee desde application-dev o application-prod automáticamente
+        configuration.setAllowedOrigins(Arrays.asList(allowedOrigins.split(",")));
+
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*")); // acepta todos los headers
-        configuration.setAllowCredentials(true); // si mandas cookies o auth headers
-        configuration.setExposedHeaders(List.of("Authorization")); // si quieres exponer cabeceras al frontend
+        configuration.setAllowedHeaders(List.of("*"));
+        configuration.setAllowCredentials(true);
+        configuration.setExposedHeaders(List.of("Authorization"));
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // aplica a todas las rutas
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 
@@ -62,26 +65,26 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable()) // ⚠️ desactivar CSRF para APIs REST
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                    .requestMatchers(
-                        "/api/auth/**",
-                        "/api/home",
-                        "/api/grupos",
-                        "/api/grupos/*/permisos",
-                        "/api/grupos/{id}",
-                        "/api/grupos/destinos-tendencia",
-                        "/api/testimonios/destacados",
-                        "/api/testimonios/aprobados",
-                        "/api/support/**",
-                        "/css/**",
-                        "/js/**",
-                        "/images/**",
-                        "/uploads/**",
-                        "/ws/**",
-                        "/",
-                        "/auth/**")
-                    .permitAll()
-                    .anyRequest().authenticated())
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/home",
+                                "/api/grupos",
+                                "/api/grupos/*/permisos",
+                                "/api/grupos/{id}",
+                                "/api/grupos/destinos-tendencia",
+                                "/api/testimonios/destacados",
+                                "/api/testimonios/aprobados",
+                                "/api/support/**",
+                                "/css/**",
+                                "/js/**",
+                                "/images/**",
+                                "/uploads/**",
+                                "/ws/**",
+                                "/",
+                                "/auth/**")
+                        .permitAll()
+                        .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
                 .exceptionHandling(exceptions -> exceptions
