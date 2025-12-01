@@ -68,6 +68,10 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/api/auth/**",
+                                "/api/verification/**",
+                                "/api/usuarios/existe-username",
+                                "/api/usuarios/existe-email",
+                                "/api/usuarios/existe-telefono",
                                 "/api/home",
                                 "/api/grupos",
                                 "/api/grupos/*/permisos",
