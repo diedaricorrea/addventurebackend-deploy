@@ -52,4 +52,23 @@ public class EmailServiceImpl implements IEmailService {
         }
     }
 
+    @Override
+    public void sendHtmlEmail(String[] toUser, String subject, String htmlContent) {
+        try {
+            MimeMessage mimeMessage = mailSender.createMimeMessage();
+            MimeMessageHelper mimeMessageHelper = new MimeMessageHelper(mimeMessage, true,
+                    StandardCharsets.UTF_8.name());
+
+            mimeMessageHelper.setFrom(emailUser);
+            mimeMessageHelper.setTo(toUser);
+            mimeMessageHelper.setSubject(subject);
+            mimeMessageHelper.setText(htmlContent, true); // true = es HTML
+
+            mailSender.send(mimeMessage);
+
+        } catch (Exception e) {
+            throw new RuntimeException("Error al enviar el correo HTML", e);
+        }
+    }
+
 }
